@@ -585,16 +585,12 @@ menu "Zenoh publishers/subscribers"
 		bool "register_ext_component_request"
 		default n
 
-	config ZENOH_PUBSUB_ROVER_ACKERMANN_GUIDANCE_STATUS
-		bool "rover_ackermann_guidance_status"
+	config ZENOH_PUBSUB_ROVER_ATTITUDE_SETPOINT
+		bool "rover_attitude_setpoint"
 		default n
 
-	config ZENOH_PUBSUB_ROVER_ACKERMANN_SETPOINT
-		bool "rover_ackermann_setpoint"
-		default n
-
-	config ZENOH_PUBSUB_ROVER_ACKERMANN_STATUS
-		bool "rover_ackermann_status"
+	config ZENOH_PUBSUB_ROVER_ATTITUDE_STATUS
+		bool "rover_attitude_status"
 		default n
 
 	config ZENOH_PUBSUB_ROVER_DIFFERENTIAL_GUIDANCE_STATUS
@@ -619,6 +615,26 @@ menu "Zenoh publishers/subscribers"
 
 	config ZENOH_PUBSUB_ROVER_MECANUM_STATUS
 		bool "rover_mecanum_status"
+		default n
+
+	config ZENOH_PUBSUB_ROVER_RATE_SETPOINT
+		bool "rover_rate_setpoint"
+		default n
+
+	config ZENOH_PUBSUB_ROVER_RATE_STATUS
+		bool "rover_rate_status"
+		default n
+
+	config ZENOH_PUBSUB_ROVER_STEERING_SETPOINT
+		bool "rover_steering_setpoint"
+		default n
+
+	config ZENOH_PUBSUB_ROVER_THROTTLE_SETPOINT
+		bool "rover_throttle_setpoint"
+		default n
+
+	config ZENOH_PUBSUB_ROVER_VELOCITY_STATUS
+		bool "rover_velocity_status"
 		default n
 
 	config ZENOH_PUBSUB_RPM
@@ -1060,15 +1076,19 @@ config ZENOH_PUBSUB_ALL_SELECTION
 	select ZENOH_PUBSUB_RC_PARAMETER_MAP
 	select ZENOH_PUBSUB_REGISTER_EXT_COMPONENT_REPLY
 	select ZENOH_PUBSUB_REGISTER_EXT_COMPONENT_REQUEST
-	select ZENOH_PUBSUB_ROVER_ACKERMANN_GUIDANCE_STATUS
-	select ZENOH_PUBSUB_ROVER_ACKERMANN_SETPOINT
-	select ZENOH_PUBSUB_ROVER_ACKERMANN_STATUS
+	select ZENOH_PUBSUB_ROVER_ATTITUDE_SETPOINT
+	select ZENOH_PUBSUB_ROVER_ATTITUDE_STATUS
 	select ZENOH_PUBSUB_ROVER_DIFFERENTIAL_GUIDANCE_STATUS
 	select ZENOH_PUBSUB_ROVER_DIFFERENTIAL_SETPOINT
 	select ZENOH_PUBSUB_ROVER_DIFFERENTIAL_STATUS
 	select ZENOH_PUBSUB_ROVER_MECANUM_GUIDANCE_STATUS
 	select ZENOH_PUBSUB_ROVER_MECANUM_SETPOINT
 	select ZENOH_PUBSUB_ROVER_MECANUM_STATUS
+	select ZENOH_PUBSUB_ROVER_RATE_SETPOINT
+	select ZENOH_PUBSUB_ROVER_RATE_STATUS
+	select ZENOH_PUBSUB_ROVER_STEERING_SETPOINT
+	select ZENOH_PUBSUB_ROVER_THROTTLE_SETPOINT
+	select ZENOH_PUBSUB_ROVER_VELOCITY_STATUS
 	select ZENOH_PUBSUB_RPM
 	select ZENOH_PUBSUB_RTL_STATUS
 	select ZENOH_PUBSUB_RTL_TIME_ESTIMATE
