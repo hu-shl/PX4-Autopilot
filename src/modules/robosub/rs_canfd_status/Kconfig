@@ -1,6 +1,12 @@
-menuconfig MODULES_CANFD_STATUS
-    bool "CAN FD Status Module"
-    help
-      Enable the CAN FD Status module, which allows you to check the CAN FD interface configuration, such as bitrate and loopback mode, via a shell command.
+menuconfig MODULES_ROBOSUB_RS_CANFD_STATUS
+	bool "CAN FD Status Module"
+	default n
+	---help---
+		Enable support for robosub_CANFD_STATUS
 
-
+menuconfig USER_ROBOSUB_RS_CANFD_STATUS
+	bool "robosub_CANFD_STATUS running as userspace module"
+	default y
+	depends on BOARD_PROTECTED && MODULES_ROBOSUB_RS_CANFD_STATUS
+	---help---
+		Put robosub_CANFD_STATUS in userspace memory

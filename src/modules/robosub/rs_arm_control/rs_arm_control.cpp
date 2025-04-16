@@ -40,6 +40,8 @@
  #include <uORB/topics/parameter_update.h>
  #include <uORB/topics/sensor_combined.h>
 
+ extern "C" __EXPORT int rs_arm_control_main(int argc, char *argv[]);
+
 
  int RobosubArmControl::print_status()
  {

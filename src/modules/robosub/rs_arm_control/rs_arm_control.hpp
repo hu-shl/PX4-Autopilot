@@ -40,7 +40,6 @@
 
  using namespace time_literals;
 
- extern "C" __EXPORT int rs_arm_control_main(int argc, char *argv[]);
 
 
  class RobosubArmControl : public ModuleBase<RobosubArmControl>, public ModuleParams

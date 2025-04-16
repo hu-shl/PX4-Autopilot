@@ -40,21 +40,20 @@
 
  using namespace time_literals;
 
- extern "C" __EXPORT int rs_arm_control_main(int argc, char *argv[]);
 
 
- class RobosubArmControl : public ModuleBase<RobosubArmControl>, public ModuleParams
+ class RobosubCanfdStatus : public ModuleBase<RobosubCanfdStatus>, public ModuleParams
  {
  public:
-	 RobosubArmControl(int example_param, bool example_flag);
+	 RobosubCanfdStatus(int example_param, bool example_flag);
 
-	 virtual ~RobosubArmControl() = default;
+	 virtual ~RobosubCanfdStatus() = default;
 
 	 /** @see ModuleBase */
 	 static int task_spawn(int argc, char *argv[]);
 
 	 /** @see ModuleBase */
-	 static RobosubArmControl *instantiate(int argc, char *argv[]);
+	 static RobosubCanfdStatus *instantiate(int argc, char *argv[]);
 
 	 /** @see ModuleBase */
 	 static int custom_command(int argc, char *argv[]);
