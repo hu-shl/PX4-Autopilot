@@ -1,0 +1,6 @@
+menuconfig MODULES_CANFD_STATUS
+    bool "CAN FD Status Module"
+    help
+      Enable the CAN FD Status module, which allows you to check the CAN FD interface configuration, such as bitrate and loopback mode, via a shell command.
+
+
