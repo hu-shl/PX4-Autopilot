@@ -264,6 +264,7 @@ set(msg_files
 	versioned/VehicleStatus.msg
 	versioned/VtolVehicleStatus.msg
 	robosub/AbsolutePressure.msg
+	robosub/BuoyancyControl.msg
 )
 list(SORT msg_files)
 
