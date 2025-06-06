@@ -246,9 +246,9 @@ _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
 
 				} else if (sensor_mainbrain &&  sensor_power)
 				{
-					range = 1.0f;
+					range = 0.2f;
 				}
-				range = 1.0f;
+				range = 0.2f;
 
 				// Normalize the rc data to a value between -1 and 1
 				normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
@@ -266,9 +266,9 @@ _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
 
 				robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 	normalized[0], 0, false);
 				robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 	normalized[0], 0, false);
-				robosub_motor_control.actuator_test(MOTOR_UP1, 		normalized[1], 0, false);
-				robosub_motor_control.actuator_test(MOTOR_UP2, 		(-normalized[1] * change_speed), 0, false);
-				robosub_motor_control.actuator_test(MOTOR_UP3, 		(normalized[1] * change_speed), 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP1, 		-normalized[1], 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP2, 		(normalized[1] * 0.5f), 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP3, 		(-normalized[1] * 0.5f), 0, false);
 				if(normalized[2] > 0.1f || normalized[2] < -0.1f)
 				{
 					robosub_motor_control.actuator_test(MOTOR_SIDE1, normalized[2], 0, false);
@@ -276,13 +276,8 @@ _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
 				}
 				 else
 				{
-					if(normalized[3] <= 0)
-					robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
-					else if(normalized[3] >= 0)
-					{
-						robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * _param_front_up_motor_reduction.get()), 0, false);
-						robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * _param_front_up_motor_reduction.get()), 0, false);
-					}
+					robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[3], 0, false);
+					robosub_motor_control.actuator_test(MOTOR_SIDE2, -normalized[3], 0, false);
 				}
 			}
 			update1 = 0;
