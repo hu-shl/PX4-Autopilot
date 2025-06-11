@@ -183,8 +183,8 @@ void RoboSubCANFDReceiver::Run()
 		}
 	}
 	else { // if the hardware filters are set up correctly, this should never happen
-		PX4_ERR("Received message from unknown source: module_id_src=%d, client_id_src=%d",
-			received_id.can_id_seg.module_id_src, received_id.can_id_seg.client_id_src);
+		PX4_ERR("Received message from unknown source: module_id_src=%lu, client_id_src=%lu",
+			(unsigned long)received_id.can_id_seg.module_id_src, (unsigned long)received_id.can_id_seg.client_id_src);
 	}
 	return;
 }
