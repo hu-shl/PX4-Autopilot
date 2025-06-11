@@ -61,6 +61,8 @@
 	#define TASK_AUTONOMOUS 0b010
 	#define TASK_REMOTE_CONTROLLED 0b111
 
+	#define THRUST_BOW_FAC 0.7f
+
 	enum MotorID {
     	MOTOR_FORWARDS1  = 101,
     	MOTOR_FORWARDS2	 = 106,
