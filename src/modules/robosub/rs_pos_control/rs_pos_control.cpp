@@ -71,6 +71,7 @@ bool RobosubPosControl::init()
 		PX4_ERR("callback registration failed");
 		return false;
 	}
+	// vlocal pos
 	if (!_vehicle_local_position_sub.registerCallback()) {
 		PX4_ERR("callback registration failed");
 		return false;
@@ -202,7 +203,7 @@ void RobosubPosControl::control_attitude_geo(const vehicle_attitude_s &attitude,
 	 * D. Mellinger, V. Kumar, "Minimum Snap Trajectory Generation and Control for Quadrotors", IEEE ICRA 2011, pp. 2520-2525.
 	 * D. A. Duecker, A. Hackbarth, T. Johannink, E. Kreuzer, and E. Solowjow, “Micro Underwater Vehicle Hydrobatics: A SubmergedFuruta Pendulum,” IEEE ICRA 2018, pp. 7498–7503.
 	 */
-	Eulerf euler_angles(matrix::Quatf(attitude.q));
+		Eulerf euler_angles(matrix::Quatf(attitude.q));
 
 	const Eulerf setpoint_euler_angles(matrix::Quatf(attitude_setpoint.q_d));
 	const float roll_body = setpoint_euler_angles(0);
@@ -282,32 +283,57 @@ void RobosubPosControl::run()
 
 	// TODO_RS IS THIS CORRECT OR ONLY ON OF THESE? only run controller if changed in vlocal_pos OR changed in _vehicle_attitude?
 	/* only run position controller if attitude changed */
-	// if (_vehicle_attitude_sub.update(&attitude))
-	/* only run controller if local_pos changed */
-	// if (_vehicle_local_position_sub.update(&vlocal_pos)){
+	/* only run pos controller if local_pos changed */
+	if (_vehicle_local_position_sub.update(&vlocal_pos)){
 
-	if (_vehicle_local_position_sub.update(&vlocal_pos) || _vehicle_attitude_sub.update(&attitude)){
-		vehicle_angular_velocity_s angular_velocity {};
-		_angular_velocity_sub.copy(&angular_velocity); // get angular velocity
+		// PX4_INFO("attitude.q: [%f, %f, %f, %f]", (double)attitude.q[0], (double)attitude.q[1], (double)attitude.q[2], (double)attitude.q[3]);
 
 		/* Run geometric attitude controllers if NOT manual mode*/
 		if (!_vcontrol_mode.flag_control_manual_enabled
 		    && _vcontrol_mode.flag_control_attitude_enabled
 		    && _vcontrol_mode.flag_control_rates_enabled){
 
-			int input_mode = _param_input_mode.get();
-
 			// setpoints
-			_vehicle_attitude_setpoint_sub.update(&_attitude_setpoint);
-			_vehicle_rates_setpoint_sub.update(&_rates_setpoint);
+			_vehicle_attitude_sub.update(&_vehicle_attitude); // get current vehicle attitude
 			_trajectory_setpoint_sub.update(&_trajectory_setpoint);
-
-			// vehicle attitude
-			_vehicle_attitude_sub.update(&_vehicle_attitude);//get current vehicle attitude
 
 			float roll_des = 0;
 			float pitch_des = 0;
 			float yaw_des = _trajectory_setpoint.yaw;
+
+			/* Stabilization Controller keep pos and hold depth + angle) vs position controller(global + yaw) */
+			int enable_stabilization = _param_stabilization.get();
+			if (enable_stabilization == 0) {
+				pos_controller_6dof(Vector3f(_trajectory_setpoint.position),
+						     roll_des, pitch_des, yaw_des, _vehicle_attitude, vlocal_pos);
+
+			} else {
+				stabilization_controller_6dof(Vector3f(_trajectory_setpoint.position),
+							      roll_des, pitch_des, yaw_des, _vehicle_attitude, vlocal_pos);
+			}
+		}
+	}
+
+	/* Attitude controller */
+	/* only run controller if attitude changed */
+	if (_vehicle_attitude_sub.update(&attitude)) {
+		vehicle_angular_velocity_s angular_velocity {};
+		_angular_velocity_sub.copy(&angular_velocity);
+
+		PX4_INFO("angular_velocity: [x:%f, y:%f, z:%f]",
+			(double)angular_velocity.xyz[0],
+			(double)angular_velocity.xyz[1],
+			(double)angular_velocity.xyz[2]);
+
+		/* Run geometric attitude controllers if NOT manual mode*/
+		if (!_vcontrol_mode.flag_control_manual_enabled
+		    && _vcontrol_mode.flag_control_attitude_enabled
+		    && _vcontrol_mode.flag_control_rates_enabled) {
+
+			int input_mode = _param_input_mode.get();
+
+			_vehicle_attitude_setpoint_sub.update(&_attitude_setpoint);
+			_vehicle_rates_setpoint_sub.update(&_rates_setpoint);
 
 			if (input_mode == 1) { // process manual data
 				Quatf attitude_setpoint(Eulerf(_param_direct_roll.get(), _param_direct_pitch.get(), _param_direct_yaw.get()));
@@ -317,7 +343,7 @@ void RobosubPosControl::run()
 				_attitude_setpoint.thrust_body[2] = 0.f;
 			}
 
-			/* Geometric Attitude Control*/
+			/* Geometric Control */
 			int skip_controller = _param_skip_ctrl.get();
 
 			if (skip_controller == 0) { // Control using geo controller
@@ -328,16 +354,6 @@ void RobosubPosControl::run()
 							    _rates_setpoint.thrust_body[0], _rates_setpoint.thrust_body[1], _rates_setpoint.thrust_body[2]);
 			}
 
-			/* Stabilization Controller keep pos and hold depth + angle) vs position controller(global + yaw) */
-			int enable_stabilization = _param_stabilization.get();
-			if (enable_stabilization) {
-				pos_controller_6dof(Vector3f(_trajectory_setpoint.position),
-						     roll_des, pitch_des, yaw_des, _vehicle_attitude, vlocal_pos);
-
-			} else {
-				stabilization_controller_6dof(Vector3f(_trajectory_setpoint.position),
-							      roll_des, pitch_des, yaw_des, _vehicle_attitude, vlocal_pos);
-			}
 		}
 	}
 
