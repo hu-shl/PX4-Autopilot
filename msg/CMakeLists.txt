@@ -263,8 +263,11 @@ set(msg_files
 	versioned/VehicleRatesSetpoint.msg
 	versioned/VehicleStatus.msg
 	versioned/VtolVehicleStatus.msg
+	robosub/RawCanfd.msg
+	robosub/DroneTask.msg
 	robosub/waterDetection.msg
 	robosub/waterContactState.msg
+	robosub/InternalSensors.msg
 )
 list(SORT msg_files)
 
@@ -316,7 +319,7 @@ add_custom_command(
 	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/msg/px_generate_uorb_topic_files.py
 		--headers
 		-f ${msg_files}
-		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned
+		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned ${CMAKE_CURRENT_SOURCE_DIR}/robosub
 		-o ${msg_out_path}
 		-e ${PX4_SOURCE_DIR}/Tools/msg/templates/uorb
 	DEPENDS
@@ -337,7 +340,7 @@ add_custom_command(
 	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/msg/px_generate_uorb_topic_files.py
 		--json
 		-f ${msg_files}
-		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned
+		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned ${CMAKE_CURRENT_SOURCE_DIR}/robosub
 		-o ${msg_source_out_path}
 		-e ${PX4_SOURCE_DIR}/Tools/msg/templates/uorb
 	DEPENDS
@@ -375,7 +378,7 @@ add_custom_command(
 	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/msg/px_generate_uorb_topic_files.py
 		--headers
 		-f ${msg_files}
-		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned
+		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned ${CMAKE_CURRENT_SOURCE_DIR}/robosub
 		-o ${ucdr_out_path}
 		-e ${PX4_SOURCE_DIR}/Tools/msg/templates/ucdr
 	DEPENDS
@@ -397,7 +400,7 @@ add_custom_command(
 	COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/msg/px_generate_uorb_topic_files.py
 		--sources
 		-f ${msg_files}
-		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned
+		-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned ${CMAKE_CURRENT_SOURCE_DIR}/robosub
 		-o ${msg_source_out_path}
 		-e ${PX4_SOURCE_DIR}/Tools/msg/templates/uorb
 	DEPENDS
@@ -493,7 +496,7 @@ if(CONFIG_LIB_CDRSTREAM)
 		COMMAND ${PYTHON_EXECUTABLE} ${PX4_SOURCE_DIR}/Tools/msg/px_generate_uorb_topic_files.py
 			--uorb-idl-header
 			-f ${msg_files}
-			-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned
+			-i ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/versioned ${CMAKE_CURRENT_SOURCE_DIR}/robosub
 			-o ${idl_uorb_path}
 			-e ${PX4_SOURCE_DIR}/Tools/msg/templates/cdrstream
 		DEPENDS
