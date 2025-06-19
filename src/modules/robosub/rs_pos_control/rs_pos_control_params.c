@@ -56,141 +56,121 @@
  */
 PARAM_DEFINE_FLOAT(RS_GAIN_X_P, 1.0f);
 /**
+ * Gain of I controller X
+ *
+ *  @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_GAIN_X_I, 1.0f);
+/**
+ * Gain of D controller X
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_GAIN_X_D, 1.0f);
+
+
+
+/**
  * Gain of P controller Y
  *
  * @group RS Position Control
  */
 PARAM_DEFINE_FLOAT(RS_GAIN_Y_P, 1.0f);
 /**
- * Gain of P controller Z
+ * Gain of I controller Y
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Z_P, 1.0f);
-
-/**
- * Gain of D controller X
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_GAIN_X_D, 0.2f);
+PARAM_DEFINE_FLOAT(RS_GAIN_Y_I, 1.0f);
 /**
  * Gain of D controller Y
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Y_D, 0.2f);
+PARAM_DEFINE_FLOAT(RS_GAIN_Y_D, 1.0f);
+
+
+
+/**
+ * Gain of P controller Z
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_GAIN_Z_P, 1.0f);
+/**
+ * Gain of I controller Z
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_GAIN_Z_I, 1.0f);
 /**
  * Gain of D controller Z
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Z_D, 0.2f);
+PARAM_DEFINE_FLOAT(RS_GAIN_Z_D, 1.0f);
+
+
 
 /**
- * Stabilization mode(1) or Position Control(0)
+ * Gain of P controller Roll
  *
- * @value 0 Position Control
- * @value 1 Stabilization Mode
  * @group RS Position Control
  */
-PARAM_DEFINE_INT32(RS_STAB_MODE, 1);
-
-// Roll gains
+PARAM_DEFINE_FLOAT(RS_GAIN_ROLL_P, 1.0f);
 /**
- * Roll proportional gain
+ * Gain of I controller Roll
  *
- * @group UUV Attitude Control
- * @decimal 2
+ * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_ROLL_P, 4.0f);
-
+PARAM_DEFINE_FLOAT(RS_GAIN_ROLL_I, 1.0f);
 /**
- * Roll differential gain
+ * Gain of D controller Roll
  *
- * @group UUV Attitude Control
- * @decimal 2
+ * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_ROLL_D, 1.5f);
+PARAM_DEFINE_FLOAT(RS_GAIN_ROLL_D, 1.0f);
 
-
-// Pitch gains
-/**
- * Pitch proportional gain
- *
- * @group UUV Attitude Control
- * @decimal 2
- */
-PARAM_DEFINE_FLOAT(RS_PITCH_P, 4.0f);
 
 /**
- * Pitch differential gain
+ * Gain of P controller Pitch
  *
- * @group UUV Attitude Control
- * @decimal 2
+ * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PITCH_D, 2.0f);
-
-
-// Yaw gains
+PARAM_DEFINE_FLOAT(RS_GAIN_PITCH_P, 1.0f);
 /**
- * Yawh proportional gain
+ * Gain of I controller Pitch
  *
- * @group UUV Attitude Control
- * @decimal 2
+ * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_YAW_P, 4.0f);
-
+PARAM_DEFINE_FLOAT(RS_GAIN_PITCH_I, 1.0f);
 /**
- * Yaw differential gain
+ * Gain of D controller Pitch
  *
- * @group UUV Attitude Control
- * @decimal 2
+ * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_YAW_D, 2.0f);
+PARAM_DEFINE_FLOAT(RS_GAIN_PITCH_D, 1.0f);
 
-// Input Modes
-/**
- * Select Input Mode
- *
- * @value 0 use Attitude Setpoints
- * @value 1 Direct Feedthrough
- * @group UUV Attitude Control
- */
-PARAM_DEFINE_INT32(RS_INPUT_MODE, 0);
+
 
 /**
- * Skip the controller
+ * Gain of P controller Yaw
  *
- * @value 0 use the module's controller
- * @value 1 skip the controller and feedthrough the setpoints
+ * @group RS Position Control
  */
-PARAM_DEFINE_INT32(RS_SKIP_CTRL, 0);
-
+PARAM_DEFINE_FLOAT(RS_GAIN_YAW_P, 1.0f);
 /**
- * Direct roll input
+ * Gain of I controller Yaw
  *
- * @group UUV Attitude Control
+ * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_DIRCT_ROLL, 0.0f);
-
+PARAM_DEFINE_FLOAT(RS_GAIN_YAW_I, 1.0f);
 /**
- * Direct pitch input
+ * Gain of D controller Yaw
  *
- * @group UUV Attitude Control
+ * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_DIRCT_PITCH, 0.0f);
+PARAM_DEFINE_FLOAT(RS_GAIN_YAW_D, 1.0f);
 
-/**
- * Direct yaw input
- *
- * @group UUV Attitude Control
- */
-PARAM_DEFINE_FLOAT(RS_DIRCT_YAW, 0.0f);
 
-/**
- * Direct thrust input
- *
- * @group UUV Attitude Control
- */
-PARAM_DEFINE_FLOAT(RS_DIRCT_THRUST, 0.0f);
+

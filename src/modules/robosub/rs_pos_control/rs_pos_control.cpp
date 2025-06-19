@@ -49,7 +49,6 @@
 *
 * @ingroup apps
 */
-extern "C" __EXPORT int rs_pos_control_main(int argc, char *argv[]);
 
 
 RobosubPosControl::RobosubPosControl():
@@ -260,7 +259,7 @@ void RobosubPosControl::control_attitude_geo(const vehicle_attitude_s &attitude,
 	/* Geometric Controller END*/
 }
 
-void RobosubPosControl::Run()
+void RobosubPosControl::run()
 {
 	PX4_INFO("RobosubPosControl::Run()");
 
