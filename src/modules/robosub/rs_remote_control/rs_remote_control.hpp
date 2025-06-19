@@ -107,6 +107,8 @@
 
 	perf_counter_t	_loop_perf;
 
+	float change_speed;
+
 	uORB::Subscription _water_detection_sub{ORB_ID(water_detection)};
 
 	water_detection_s 	_water_detection{};
@@ -130,7 +132,8 @@
 		(ParamFloat<px4::params::OFF_A_HUMIDITY>) _param_offset_abs_humidity,
 		(ParamFloat<px4::params::OFF_TEMPERATURE>) _param_offset_temperature,
 		(ParamFloat<px4::params::OFF_PRESSURE>) _param_offset_pressure,
-		(ParamFloat<px4::params::OFF_R_HUMIDITY>) _param_offset_rel_humidity
+		(ParamFloat<px4::params::OFF_R_HUMIDITY>) _param_offset_rel_humidity,
+		(ParamFloat<px4::params::UP_MOTOR_RED>) _param_front_up_motor_reduction
 	)
 
 	// Subscriptions

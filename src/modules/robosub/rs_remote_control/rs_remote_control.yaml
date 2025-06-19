@@ -54,4 +54,16 @@ parameters:
         max: 50.0
         decimal: 1
 
+      UP_MOTOR_RED:
+        description:
+          short: Multiplier for the front "up" motors
+          long: |
+            The front "up" motors are in a pair while the back one is a single one, this means
+            that the front is power heavy.
+        type: float
+        default: 0.8
+        min: 0.0
+        max: 1.0
+        decimal: 1
+
 
