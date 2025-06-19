@@ -202,7 +202,7 @@ void RoboSubCANFDReceiver::send_esc_status(const esc_payload_u *esc_data) {
 
         for (int i = 0; i < max_esc_count; i++) {
                 // if (_output_functions[i] != 0) {
-               	if (1) { // is this motor is not disabled?
+                if (1) { // is this motor is not disabled?
                         max_esc_index = i;
                 }
 
