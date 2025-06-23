@@ -169,9 +169,9 @@ void RobosubNavigator::Run()
 	if (_drone_task_sub.updated()) {
 		_drone_task_sub.copy(&_drone_task);
 	}
-	if (_drone_task.task == drone_task_s::TASK_AUTONOMOUS) {
-		movement_test();
-	}
+	// if (_drone_task.task == drone_task_s::TASK_AUTONOMOUS) {
+	// 	movement_test();
+	// }
 }
 
 void RobosubNavigator::parameters_update(bool force)

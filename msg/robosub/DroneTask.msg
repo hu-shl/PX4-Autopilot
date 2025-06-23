@@ -1,8 +1,12 @@
 uint64 timestamp			# time since system startup				(microseconds)
 
-uint8 TASK_INIT = 0
-uint8 TASK_DEFAULT = 1
-uint8 TASK_AUTONOMOUS = 2
-uint8 TASK_REMOTE_CONTROLLED = 7
+uint8 TASK_REMOTECONTROLLED 	= 0	# completely remote controlled
+uint8 TASK_BUOYANCYCTRL 	= 1	# buoyancy tanks remote controlled
+uint8 TASK_DPGOAL	 	= 2	# change the goal position
+uint8 TASK_DPTELEARM 		= 3	# complete robot arm control
+uint8 TASK_SEARCHBUOY 		= 4	# buoy search pattern
+uint8 TASK_SEARCHTUBE		= 5	# tube search pattern
+uint8 TASK_TASK2		= 6	# challenge B
+uint8 TASK_TASK1 		= 7	# challenge A
 
 uint8 task 				# task that the drone is currently in. see TASK_*
