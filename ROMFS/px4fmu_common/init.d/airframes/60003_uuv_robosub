@@ -114,13 +114,18 @@ param set-default UXRCE_DDS_PRT 8888
 
 param set-default SENS_EN_INA228 1
 
-rs_motor_control start
-rs_remote_control start
-control_allocator start
-land_detector start rover
+# --- Motor and Position Control Modules ---
+rs_motor_control start      # Start motor control module
+rs_remote_control start     # Start remote control interface
+control_allocator start     # Start control allocator for actuator mixing
+# land_detector start rover # (Optional) Start land detector for rover mode
 
-rs_canfd_socket start
-rs_canfd_receiver start
-rs_canfd_sender start
+# --- CAN Communication Modules ---
+rs_canfd_socket start       # Start CAN FD socket interface
+rs_canfd_receiver start     # Start CAN FD receiver
+rs_canfd_sender start       # Start CAN FD sender
 
-rs_pos_control start
+# --- Position and Navigation Modules ---
+rs_pos_control start        # Start position control module
+
+rs_navigator start          # Start navigation module
