@@ -56,10 +56,15 @@
  {
  public:
 
-	#define TASK_INIT 0b000
-	#define TASK_DEFAULT 0b001
-	#define TASK_AUTONOMOUS 0b010
-	#define TASK_REMOTE_CONTROLLED 0b111
+	#define TASK_MISSIONPLANNING 0b000	// 0
+	#define TASK_REINFORCED 0b001		// 1
+	#define TASK_AUTONOMOUS 0b010		// 2
+	#define TASK_TELEARM 0b011		// 3
+	// yet to be defined task 4
+	#define TASK_REMOTE_POSITION 0b101	// 5
+	#define TASK_REMOTE_PROCESSED 0b110	// 6
+	#define TASK_REMOTE_CONTROLLED 0b111	// 7
+
 
 	enum MotorID {
     	MOTOR_FORWARDS1  = 101,

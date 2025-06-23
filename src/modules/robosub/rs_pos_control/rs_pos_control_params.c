@@ -41,136 +41,201 @@
  *
  * All the ackowledgments and credits for the fw wing/rover app are reported in those files.
  *
- * @author Tim Hansen <t.hansen@jacobs-university.de>
- * @author Daniel Duecker <daniel.duecker@tuhh.de>
- */
+ * @author Thijs Vader <Thijs.vader@student.hu.nl>
+*/
 
-/*
- * Controller parameters, accessible via MAVLink
- *
- */
+
+
+// #### PID GAIN PARAMETERS FOR X AXIS ####
+
 /**
  * Gain of P controller X
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_X_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_P_X_P, 1.0f);
 /**
- * Gain of I controller X
- *
- *  @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_GAIN_X_I, 1.0f);
-/**
- * Gain of D controller X
+ * Gain of PID P controller X
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_X_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_X_P, 1.0f);
+/**
+ * Gain of PID I controller X
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_X_I, 1.0f);
+/**
+ * Gain of PID D controller X
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_X_D, 1.0f);
 
 
 
+// #### PID GAIN PARAMETERS FOR Y AXIS ####
 /**
  * Gain of P controller Y
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Y_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_P_Y_P, 1.0f);
 /**
- * Gain of I controller Y
+ * Gain of PID P controller Y
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Y_I, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_Y_P, 1.0f);
 /**
- * Gain of D controller Y
+ * Gain of PID I controller Y
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Y_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_Y_I, 1.0f);
+/**
+ * Gain of PID D controller Y
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_Y_D, 1.0f);
 
 
 
+// #### PID GAIN PARAMETERS FOR Z AXIS ####
 /**
  * Gain of P controller Z
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Z_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_P_Z_P, 1.0f);
 /**
- * Gain of I controller Z
+ * Gain of PID P controller Z
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Z_I, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_Z_P, 1.0f);
 /**
- * Gain of D controller Z
+ * Gain of PID I controller Z
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_Z_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_Z_I, 1.0f);
+/**
+ * Gain of PID D controller Z
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_Z_D, 1.0f);
 
 
 
+// #### PID GAIN PARAMETERS FOR ROLL ####
 /**
  * Gain of P controller Roll
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_ROLL_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_P_ROLL_P, 1.0f);
 /**
- * Gain of I controller Roll
+ * Gain of PID P controller Roll
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_ROLL_I, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_ROLL_P, 1.0f);
 /**
- * Gain of D controller Roll
+ * Gain of PID I controller Roll
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_ROLL_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_ROLL_I, 1.0f);
+/**
+ * Gain of PID D controller Roll
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_ROLL_D, 1.0f);
 
 
+// #### PID GAIN PARAMETERS FOR PITCH ####
 /**
  * Gain of P controller Pitch
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_PITCH_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_P_PITCH_P, 1.0f);
 /**
- * Gain of I controller Pitch
+ * Gain of PID P controller Pitch
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_PITCH_I, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_PITCH_P, 1.0f);
 /**
- * Gain of D controller Pitch
+ * Gain of PID I controller Pitch
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_PITCH_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_PITCH_I, 1.0f);
+/**
+ * Gain of PID D controller Pitch
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_PITCH_D, 1.0f);
 
 
 
+// #### PID GAIN PARAMETERS FOR YAW ####
 /**
  * Gain of P controller Yaw
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_YAW_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_P_YAW_P, 1.0f);
 /**
- * Gain of I controller Yaw
+ * Gain of PID P controller Yaw
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_YAW_I, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_YAW_P, 1.0f);
 /**
- * Gain of D controller Yaw
+ * Gain of PID I controller Yaw
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_GAIN_YAW_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID_YAW_I, 1.0f);
+/**
+ * Gain of PID D controller Yaw
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_YAW_D, 1.0f);
 
 
 
+// #### PID SETTINGS ####
+/**
+ * Integral limit for the position control loop
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_P_OUT_LIM, 100.0f);
+/**
+ * Output limit for the position control loop
+ *
+ *  @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID_OUT_LIM, 1.0f);
+/**
+ * Frequency of the position control loop (Hz)
+ *
+ *  @group RS Position Control
+ */
+PARAM_DEFINE_INT32(RS_POS_CTRL_FREQ, 5);
+/**
+ * Force the parameters to be updated
+ *
+ *  @group RS Position Control
+ */
+PARAM_DEFINE_INT32(RS_FORCE_PARAMS, 0);

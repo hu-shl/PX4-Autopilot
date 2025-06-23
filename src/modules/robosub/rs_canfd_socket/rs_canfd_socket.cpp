@@ -317,7 +317,8 @@ void RoboSubCANFDSocket::run()
 void RoboSubCANFDSocket::parameters_update(bool force)
 {
 	// check for parameter updates
-	if (_parameter_update_sub.updated() || force) {
+	if (_parameter_update_sub.updated() || force)
+	{
 		// clear update
 		parameter_update_s update;
 		_parameter_update_sub.copy(&update);

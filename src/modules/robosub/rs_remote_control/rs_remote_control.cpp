@@ -188,16 +188,28 @@ _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
     			((normalized[7] > 0.0f) ? 1 : 0) << 2;
 			switch(bitReg)
 			{
-				case 0b1000:
-					drone_task.task = TASK_INIT;
+				case 0b000:	// For mission planning in QGround Control
+					drone_task.task = TASK_MISSIONPLANNING;
 				break;
-				case 0b1001:
-					drone_task.task = TASK_DEFAULT;
+				case 0b001:	// For RL AI Model		UNUSED
+					drone_task.task = TASK_REINFORCED;
 				break;
-				case 0b1010:
+				case 0b010:	// Vision AI Model
 					drone_task.task = TASK_AUTONOMOUS;
 				break;
-				case 0b1111:
+				case 0b011:	// For tele operated arm control
+					drone_task.task = TASK_TELEARM;
+				break;
+
+				// add task 4 here later on			UNUSED
+
+				case 0b101:	// For remote position control	UNUSED
+					drone_task.task = TASK_REMOTE_POSITION;
+				break;
+				case 0b110:	// For remote processed control	UNUSED
+					drone_task.task = TASK_REMOTE_PROCESSED;
+				break;
+				case 0b111:	// For remote controlled
 					drone_task.task = TASK_REMOTE_CONTROLLED;
 				break;
 				default:
