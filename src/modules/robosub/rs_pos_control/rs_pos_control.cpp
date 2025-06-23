@@ -52,19 +52,14 @@
  * @ingroup apps
  */
 RobosubPosControl::RobosubPosControl()
-    : ModuleParams(nullptr),
-      ScheduledWorkItem(MODULE_NAME,
-                        px4::wq_configurations::nav_and_controllers),
+    : ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
 
       /* performance counters */
-      _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": cycle"))
-{
-}
+      _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": cycle")) {}
 
 RobosubPosControl::~RobosubPosControl() { perf_free(_loop_perf); }
 
-bool RobosubPosControl::init()
-{
+bool RobosubPosControl::init() {
         // initialize parameters
         parameters_update(true);
 
@@ -74,11 +69,9 @@ bool RobosubPosControl::init()
         return true;
 }
 
-int RobosubPosControl::parameters_update(bool force)
-{
+int RobosubPosControl::parameters_update(bool force) {
         // check for parameter updates
-        if (_parameter_update_sub.updated() || force)
-        {
+        if (_parameter_update_sub.updated() || force) {
                 // clear update
                 parameter_update_s update;
                 _parameter_update_sub.copy(&update);
@@ -91,53 +84,12 @@ int RobosubPosControl::parameters_update(bool force)
 
         return 0; // return 0 to indicate no parameters were updated
 }
-/**
- * @brief Publish the thrust setpoint
- *  @param thrust_x The thrust setpoint in the x direction
- *  @param thrust_y The thrust setpoint in the y direction
- *  @param thrust_z The thrust setpoint in the z direction
- */
-void RobosubPosControl::publish_thrust_setpoint(const float thrust_x,
-                                                const float thrust_y,
-                                                const float thrust_z)
-{
-        vehicle_thrust_setpoint_s vehicle_thrust_setpoint = {};
-        vehicle_thrust_setpoint.timestamp = hrt_absolute_time();
 
-        vehicle_thrust_setpoint.xyz[0] = thrust_x;
-        vehicle_thrust_setpoint.xyz[1] = thrust_y;
-        vehicle_thrust_setpoint.xyz[2] = thrust_z;
-
-        _thrust_setpoint_pub.publish(vehicle_thrust_setpoint);
-}
-
-/**
- * @brief Publish the attitude setpoint
- *  @param roll The roll setpoint
- *  @param pitch The pitch setpoint
- *  @param yaw The yaw setpoint
- */
-void RobosubPosControl::publish_torque_setpoint(const float torque_roll,
-                                                const float torque_pitch,
-                                                const float torque_yaw)
-{
-        vehicle_torque_setpoint_s vehicle_torque_setpoint = {};
-        vehicle_torque_setpoint.timestamp = hrt_absolute_time();
-
-        vehicle_torque_setpoint.xyz[0] = torque_roll;
-        vehicle_torque_setpoint.xyz[1] = torque_pitch;
-        vehicle_torque_setpoint.xyz[2] = torque_yaw;
-
-        _torque_setpoint_pub.publish(vehicle_torque_setpoint);
-}
-
-void RobosubPosControl::Run()
-{
+void RobosubPosControl::Run() {
         PX4_INFO("RobosubPosControl::Run()");
 
         // only run the task if not to exit
-        if (should_exit())
-        {
+        if (should_exit()) {
                 exit_and_cleanup();
                 return;
         }
@@ -170,55 +122,41 @@ void RobosubPosControl::Run()
         _trajectory_setpoint_sub.update(&_trajectory_setpoint);
 
         // update parameters if needed
-        if (parameters_update(_force_param.get()))
-        {
+        if (parameters_update(_force_param.get())) {
                 X_Axis.P_gain = _p_gain_p_x.get();
                 X_Axis.PID_P_gain = _pid_gain_p_x.get();
                 X_Axis.PID_I_gain = _pid_gain_i_x.get();
                 X_Axis.PID_D_gain = _pid_gain_d_x.get();
-                X_Axis.velocity_constraint = _p_output_limit.get();
-                X_Axis.thrust_constraint = _pid_output_limit.get();
 
                 Y_Axis.P_gain = _p_gain_p_y.get();
                 Y_Axis.PID_P_gain = _pid_gain_p_y.get();
                 Y_Axis.PID_I_gain = _pid_gain_i_y.get();
                 Y_Axis.PID_D_gain = _pid_gain_d_y.get();
-                Y_Axis.velocity_constraint = _p_output_limit.get();
-                Y_Axis.thrust_constraint = _pid_output_limit.get();
 
                 Z_Axis.P_gain = _p_gain_p_z.get();
                 Z_Axis.PID_P_gain = _pid_gain_p_z.get();
                 Z_Axis.PID_I_gain = _pid_gain_i_z.get();
                 Z_Axis.PID_D_gain = _pid_gain_d_z.get();
-                Z_Axis.velocity_constraint = _p_output_limit.get();
-                Z_Axis.thrust_constraint = _pid_output_limit.get();
 
                 Roll_Axis.P_gain = _p_gain_p_roll.get();
                 Roll_Axis.PID_P_gain = _pid_gain_p_roll.get();
                 Roll_Axis.PID_I_gain = _pid_gain_i_roll.get();
                 Roll_Axis.PID_D_gain = _pid_gain_d_roll.get();
-                Roll_Axis.velocity_constraint = _p_output_limit.get();
-                Roll_Axis.thrust_constraint = _pid_output_limit.get();
 
                 Pitch_Axis.P_gain = _p_gain_p_pitch.get();
                 Pitch_Axis.PID_P_gain = _pid_gain_p_pitch.get();
                 Pitch_Axis.PID_I_gain = _pid_gain_i_pitch.get();
                 Pitch_Axis.PID_D_gain = _pid_gain_d_pitch.get();
-                Pitch_Axis.velocity_constraint = _p_output_limit.get();
-                Pitch_Axis.thrust_constraint = _pid_output_limit.get();
 
                 Yaw_Axis.P_gain = _p_gain_p_yaw.get();
                 Yaw_Axis.PID_P_gain = _pid_gain_p_yaw.get();
                 Yaw_Axis.PID_I_gain = _pid_gain_i_yaw.get();
                 Yaw_Axis.PID_D_gain = _pid_gain_d_yaw.get();
-                Yaw_Axis.velocity_constraint = _p_output_limit.get();
-                Yaw_Axis.thrust_constraint = _pid_output_limit.get();
-
         }
 
         // update incomming data
-        _vehicle_local_position_sub.update(&_vehicle_local_position);  // position
-        _vehicle_attitude_sub.update(&_vehicle_attitude); // attitude
+        _vehicle_local_position_sub.update(&_vehicle_local_position); // position
+        _vehicle_attitude_sub.update(&_vehicle_attitude);             // attitude
 
         X_Axis.position_current = _vehicle_local_position.x;
         X_Axis.velocity_current = _vehicle_local_position.vx;
@@ -239,20 +177,17 @@ void RobosubPosControl::Run()
         Z_Axis.input_type = INPUT_TYPE_POSITION;
 
         Roll_Axis.position_current = _vehicle_attitude.roll;
-        Roll_Axis.velocity_current =
-        Roll_Axis.position_setpoint = _vehicle_setpoint.roll;
+        Roll_Axis.velocity_current = Roll_Axis.position_setpoint = _vehicle_setpoint.roll;
         Roll_Axis.velocity_setpoint = 0;
         Roll_Axis.input_type = INPUT_TYPE_POSITION;
 
         Pitch_Axis.position_current = _vehicle_attitude.pitch;
-        Pitch_Axis.velocity_current =
-        Pitch_Axis.position_setpoint = _vehicle_setpoint.pitch;
+        Pitch_Axis.velocity_current = Pitch_Axis.position_setpoint = _vehicle_setpoint.pitch;
         Pitch_Axis.velocity_setpoint = 0;
         Pitch_Axis.input_type = INPUT_TYPE_POSITION;
 
         Yaw_Axis.position_current = _vehicle_attitude.yaw;
-        Yaw_Axis.velocity_current =
-        Yaw_Axis.position_setpoint = _vehicle_setpoint.yaw;
+        Yaw_Axis.velocity_current = Yaw_Axis.position_setpoint = _vehicle_setpoint.yaw;
         Yaw_Axis.velocity_setpoint = 0;
         Yaw_Axis.input_type = INPUT_TYPE_POSITION;
 
@@ -263,15 +198,10 @@ void RobosubPosControl::Run()
         run_axis_pid(Pitch_Axis);
         run_axis_pid(Yaw_Axis);
 
-        // publish the thrust setpoint
-        publish_thrust_setpoint(X_Axis.pid_output, Y_Axis.pid_output, Z_Axis.pid_output);
+        constrain_actuator_commands(Roll_Axis.pid_output, Pitch_Axis.pid_output, Yaw_Axis.pid_output, X_Axis.pid_output,
+                                    Y_Axis.pid_output, Z_Axis.pid_output);
 
-        // publish the torque setpoint
-        publish_torque_setpoint(Roll_Axis.pid_output, Pitch_Axis.pid_output, Yaw_Axis.pid_output);
-
-
-        ScheduleDelayed(
-            1000000 / _pos_control_freq.get()); // Schedule next run at the desired frequency
+        ScheduleDelayed(1000000 / _pos_control_freq.get()); // Schedule next run at the desired frequency
 
         perf_end(_loop_perf);
 }
@@ -287,22 +217,17 @@ void RobosubPosControl::Run()
  * @param argv Argument vector
  * @return Exit status
  */
-int RobosubPosControl::task_spawn(int argc, char *argv[])
-{
+int RobosubPosControl::task_spawn(int argc, char *argv[]) {
         RobosubPosControl *instance = new RobosubPosControl();
 
-        if (instance)
-        {
+        if (instance) {
                 _object.store(instance);
                 _task_id = task_id_is_work_queue;
 
-                if (instance->init())
-                {
+                if (instance->init()) {
                         return PX4_OK;
                 }
-        }
-        else
-        {
+        } else {
                 PX4_ERR("alloc failed");
         }
 
@@ -320,10 +245,7 @@ int RobosubPosControl::task_spawn(int argc, char *argv[])
  * @param argv Argument vector
  * @return Exit status
  */
-int RobosubPosControl::custom_command(int argc, char *argv[])
-{
-        return print_usage("unknown command");
-}
+int RobosubPosControl::custom_command(int argc, char *argv[]) { return print_usage("unknown command"); }
 
 /**
  * @brief Print usage information for the Robosub Position Control module
@@ -331,10 +253,8 @@ int RobosubPosControl::custom_command(int argc, char *argv[])
  * @param reason Optional reason for printing usage
  * @return Exit status
  */
-int RobosubPosControl::print_usage(const char *reason)
-{
-        if (reason)
-        {
+int RobosubPosControl::print_usage(const char *reason) {
+        if (reason) {
                 PX4_WARN("%s\n", reason);
         }
 
@@ -351,6 +271,112 @@ Has no commands for now.
 
         return 0;
 }
+/**
+ * @brief Limit pitch, roll, yaw and thust xyz if water is detected
+ *
+ */
+void RobosubPosControl::apply_water_safety(float &roll_u, float &pitch_u, float &yaw_u, float &thrust_x,
+                                           float &thrust_y, float &thrust_z) {
+        float safety_factor = thrust_constrain;
+        bool sensor_mainbrain = false;
+        bool sensor_power = false;
+
+        if (_water_detection_sub.update(&_water_detection)) { // update water detection sensors
+                sensor_mainbrain = _water_detection.mainbrain_sensor;
+                sensor_power = _water_detection.power_module_sensor;
+        }
+
+        if (!sensor_mainbrain && !sensor_power) // Limit to 20 percent if no water detected
+        {
+                safety_factor = 0.2f;
+        } else if (!sensor_mainbrain && sensor_power) // AUV is on the water
+        {
+                safety_factor = 0.3f;
+        } else if (sensor_mainbrain &&
+                   sensor_power) // Water is detected above (mainbrain) and below (power) AUV. Under water
+        {
+                safety_factor = thrust_constrain;
+        }
+
+        roll_u *= safety_factor;
+        pitch_u *= safety_factor;
+        yaw_u *= safety_factor;
+        thrust_x *= safety_factor;
+        thrust_y *= safety_factor;
+        thrust_z *= safety_factor;
+}
+
+/**
+ * @brief constrains and publish the thrust and the attitude setpoint
+ *  @param thrust_x The thrust setpoint in the x direction
+ *  @param thrust_y The thrust setpoint in the y direction
+ *  @param thrust_z The thrust setpoint in the z direction
+ *  @brief Publish the attitude setpoint
+ *  @param roll The roll setpoint
+ *  @param pitch The pitch setpoint
+ *  @param yaw The yaw setpoint
+ *
+ * Borrowed from UUVAttitudeControl::constrain_actuator_commands
+ */
+void RobosubPosControl::constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
+                                                    float thrust_y, float thrust_z) {
+        // Apply water detection safety
+        apply_water_safety(roll_u, pitch_u, yaw_u, thrust_x, thrust_y, thrust_z);
+
+        float torque_constrain = _p_output_limit;
+        float thrust_constrain = _pid_output_limit;
+
+        if (PX4_ISFINITE(roll_u)) {
+                roll_u = math::constrain(roll_u, -torque_constrain, torque_constrain);
+                vehicle_torque_setpoint.xyz[0] = roll_u;
+
+        } else {
+                vehicle_torque_setpoint.xyz[0] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(pitch_u)) {
+                pitch_u = math::constrain(pitch_u, -torque_constrain, torque_constrain);
+                vehicle_torque_setpoint.xyz[1] = pitch_u;
+
+        } else {
+                vehicle_torque_setpoint.xyz[1] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(yaw_u)) {
+                yaw_u = math::constrain(yaw_u, -torque_constrain, torque_constrain);
+                vehicle_torque_setpoint.xyz[2] = yaw_u;
+
+        } else {
+                vehicle_torque_setpoint.xyz[2] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(thrust_x)) {
+                thrust_x = math::constrain(thrust_x, -thrust_constrain, thrust_constrain);
+                vehicle_thrust_setpoint.xyz[0] = thrust_x;
+
+        } else {
+                vehicle_thrust_setpoint.xyz[0] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(thrust_y)) {
+                thrust_y = math::constrain(thrust_y, -thrust_constrain, thrust_constrain);
+                vehicle_thrust_setpoint.xyz[1] = thrust_y;
+
+        } else {
+                vehicle_thrust_setpoint.xyz[1] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(thrust_z)) {
+                thrust_z = math::constrain(thrust_z, -thrust_constrain, thrust_constrain);
+                vehicle_thrust_setpoint.xyz[2] = thrust_z;
+
+        } else {
+                vehicle_thrust_setpoint.xyz[2] = 0.0f;
+        }
+
+        _torque_setpoint_pub.publish(vehicle_torque_setpoint);
+        _thrust_setpoint_pub.publish(vehicle_thrust_setpoint);
+}
 
 /**
  * @brief Main entry point for the Robosub Position Control module
@@ -359,13 +385,9 @@ Has no commands for now.
  * @param argv Argument vector
  * @return Exit status
  */
-int rs_pos_control_main(int argc, char *argv[])
-{
-        return RobosubPosControl::main(argc, argv);
-}
+int rs_pos_control_main(int argc, char *argv[]) { return RobosubPosControl::main(argc, argv); }
 
-void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
-{
+void RobosubPosControl::run_axis_pid(AxisPID_s &axis) {
         // perform P controller: go from position to velocity
         float position_error = axis.position_setpoint - axis.position_current;
         float p_output = axis.P_gain * position_error;
@@ -374,22 +396,19 @@ void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
         float velocity_setpoint = 0.0f;
 
         // choose between position or velocity setpoint based on task
-        if (axis.input_type == INPUT_TYPE_POSITION)
-        {
+        if (axis.input_type == INPUT_TYPE_POSITION) {
                 // if input is position, use the P output as velocity setpoint
                 axis.velocity_setpoint = p_constrained_output;
-        }
-        else if (axis.input_type == INPUT_TYPE_VELOCITY)
-        {
+        } else if (axis.input_type == INPUT_TYPE_VELOCITY) {
                 // if input is velocity, use the setpoint directly
                 axis.velocity_setpoint = axis.velocity_setpoint;
         }
 
         axis.delta_time = hrt_elapsed_time(&axis.last_run_time) / 1e6f; // convert to seconds
-        axis.last_run_time = hrt_absolute_time(); // update last run time
+        axis.last_run_time = hrt_absolute_time();                       // update last run time
 
         axis.PID_controller.setSetpoint(velocity_setpoint);
         axis.PID_controller.setGains(axis.PID_P_gain, axis.PID_I_gain, axis.PID_D_gain);
-        axis.PID_controller.setOutputLimit(axis.thrust_constraint);
+        // axis.PID_controller.setOutputLimit(axis.thrust_constraint);
         axis.pid_output = axis.PID_controller.update(axis.velocity_current, axis.delta_time, true);
 }
