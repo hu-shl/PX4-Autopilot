@@ -145,31 +145,7 @@ void RobosubPosControl::Run()
         // Start performance counter
         perf_begin(_loop_perf);
 
-        // update drone task
-        _drone_task_sub.update(&_drone_task);
-
-        // update setpoint based on task
-        // switch (_drone_task.task)
-        // {
-        // case (_drone_task.TASK_AUTONOMOUS):
-
-        //         _auto_control_setpoint_sub.copy(&_vehicle_setpoint);
-        //         break;
-
-        // case (_drone_task.TASK_REMOTE_CONTROLLED):
-
-        //         _manual_control_setpoint_sub.copy(&_vehicle_setpoint);
-        //         break;
-
-        // // dont update setpoint if task is unknown
-        // default:
-        //         PX4_ERR("Unknown task value: %d", _drone_task.task);
-        //         break;
-        // }
-
-        _trajectory_setpoint_sub.update(&_trajectory_setpoint);
-
-        // update parameters if needed
+                // update parameters if needed
         if (parameters_update(_force_param.get()))
         {
                 X_Axis.P_gain = _p_gain_p_x.get();
@@ -216,9 +192,41 @@ void RobosubPosControl::Run()
 
         }
 
-        // update incomming data
-        _vehicle_local_position_sub.update(&_vehicle_local_position);  // position
-        _vehicle_attitude_sub.update(&_vehicle_attitude); // attitude
+        _drone_task_sub.update(&_drone_task);                           // current mode of the drone
+        _vehicle_local_position_sub.update(&_vehicle_local_position);   // x, y, z position and velocity
+        _vehicle_attitude_sub.update(&_vehicle_attitude);               // roll, pitch, yaw attitude
+        _vehicle_angular_velocity_sub.update(&_vehicle_setpoint); // vehicle setpoint for position and attitude
+
+        matrix::Eulerf current_attitude(_vehicle_attitude.q);
+
+
+        switch(_drone_task.task)
+        {
+                case TASK_AUTONOMOUS:           // Vision AI Model
+
+                break;
+
+                case TASK_REMOTECONTROLLED:    // Raw Remote Control
+                break;
+
+                case TASK_REMOTE_PROCESSED:     // PID Remote Control
+                case TASK_REMOTE_POSITION:      // Remote Controlled position
+                case TASK_REINFORCED:           // RL AI Model
+                case TASK_TELEARM:              // Tele operated arm
+                case TASK_MISSIONPLANNING:      // default initialisation
+
+                default:                        // in default state, keep position.
+                RobosubPosControl::setpoint_hold_position(X_Axis, _vehicle_local_position.x);
+                RobosubPosControl::setpoint_hold_position(Y_Axis, _vehicle_local_position.y);
+                RobosubPosControl::setpoint_hold_position(Z_Axis, _vehicle_local_position.z);
+                RobosubPosControl::setpoint_hold_position(Roll_Axis);
+                RobosubPosControl::setpoint_hold_position(Pitch_Axis);
+                RobosubPosControl::setpoint_hold_position(Yaw_Axis);
+                break;
+        }
+
+
+
 
         X_Axis.position_current = _vehicle_local_position.x;
         X_Axis.velocity_current = _vehicle_local_position.vx;
@@ -392,4 +400,28 @@ void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
         axis.PID_controller.setGains(axis.PID_P_gain, axis.PID_I_gain, axis.PID_D_gain);
         axis.PID_controller.setOutputLimit(axis.thrust_constraint);
         axis.pid_output = axis.PID_controller.update(axis.velocity_current, axis.delta_time, true);
+}
+
+void RobosubPosControl::setpoint_hold_position(AxisPID_s &axis, float position_current)
+{
+        // keep this axis in the same position
+        axis.position_setpoint = position_current;
+        axis.velocity_setpoint = 0.0f; // Reset velocity setpoint to zero
+        axis.input_type = INPUT_TYPE_POSITION; // Set input type to position
+}
+
+void RobosubPosControl::setpoint_velocity(AxisPID_s &axis, float velocity_setpoint, float velocity_current)
+{
+        // set the velocity setpoint for this axis
+        axis.velocity_setpoint = velocity_setpoint;
+        axis.velocity_current = velocity_current;
+        axis.input_type = INPUT_TYPE_VELOCITY; // Set input type to velocity
+}
+
+void RobosubPosControl::setpoint_position(AxisPID_s &axis, float position_setpoint, float position_current)
+{
+        // set the position setpoint for this axis
+        axis.position_setpoint = position_setpoint;
+        axis.position_current = position_current;
+        axis.input_type = INPUT_TYPE_POSITION; // Set input type to position
 }

@@ -36,6 +36,7 @@
 #include <lib/pid/PID.hpp>         // PID Controller
 #include <drivers/drv_hrt.h>       // High Resolution Timer
 #include <lib/perf/perf_counter.h> // Performance Counters
+
 #include <lib/mathlib/mathlib.h>     // Math Library
 // #include <matrix/math.hpp>
 
@@ -54,17 +55,22 @@
 #include <uORB/Publication.hpp>
 
 // PX4 TOPICS
+// parameters
 #include <uORB/topics/parameter_update.h>
 
-#include <uORB/topics/vehicle_position_attitude_setpoint.h> // vehicle position and attitude setpoint subscription
-#include <uORB/topics/drone_task.h>             // drone task subscription
-#include <uORB/topics/vehicle_local_position.h> // local position subscription
-#include <uORB/topics/vehicle_attitude.h>       // vehicle attitude subscription
+// Setpoints
+#include <uORB/topics/trajectory_setpoint.h>                // used for Vision AI model
+#include <uORB/topics/vehicle_position_attitude_setpoint.h> // used for Remote Control                    // drone task subscription
 
-#include <uORB/topics/vehicle_thrust_setpoint.h> // vehicle thrust setpoint publication
-#include <uORB/topics/vehicle_torque_setpoint.h> // vehicle torque setpoint publication
+// Current data
+#include <uORB/topics/drone_task.h>
+#include <uORB/topics/vehicle_local_position.h>     // position and velocity for x, y and z
+#include <uORB/topics/vehicle_attitude.h>           // position for roll, pitch and yaw
+#include <uORB/topics/vehicle_angular_velocity.h>   // velocity for roll, pitch and yaw
 
-#include <uORB/topics/trajectory_setpoint.h> // vehicle trajectory setpoint publication
+// Publications
+#include <uORB/topics/vehicle_thrust_setpoint.h>    // vehicle thrust setpoint publication
+#include <uORB/topics/vehicle_torque_setpoint.h>    // vehicle torque setpoint publication
 
 #include <uORB/uORB.h>
 
@@ -155,6 +161,10 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
         uORB::Subscription _vehicle_attitude_sub{
             ORB_ID(vehicle_attitude)};                          // vehicle attitude subscription
 
+        uORB::Subscription _vehicle_angular_velocity_sub{
+            ORB_ID(vehicle_angular_velocity)};                  // vehicle angular velocity subscription
+
+
         uORB::Subscription _trajectory_setpoint_sub{
             ORB_ID(trajectory_setpoint)};                       // vehicle trajectory setpoint subscription
 
@@ -173,14 +183,17 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
         // Define subscription variables
         vehicle_position_attitude_setpoint_s
             _vehicle_setpoint{}; // manual control setpoint
+        trajectory_setpoint_s
+            _trajectory_setpoint{}; // vehicle trajectory setpoint
         drone_task_s
             _drone_task{};   // drone task
         vehicle_local_position_s
             _vehicle_local_position{}; // vehicle local position
         vehicle_attitude_s
             _vehicle_attitude{}; // vehicle attitude
-        trajectory_setpoint_s
-            _trajectory_setpoint{}; // vehicle trajectory setpoint
+        vehicle_angular_velocity_s
+            _vehicle_angular_velocity{}; // vehicle angular velocity
+
 
 
 
@@ -242,5 +255,10 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
 
 
         void run_axis_pid(AxisPID_s &axis);
+
+        void setpoint_position(AxisPID_s &axis, float position_setpoint, float position_current);
+        void setpoint_velocity(AxisPID_s &axis, float velocity_setpoint, float velocity_current);
+        void setpoint_hold_position(AxisPID_s &axis, float position_current);
+
 
 };
