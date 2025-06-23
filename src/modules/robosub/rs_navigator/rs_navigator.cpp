@@ -40,6 +40,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 
+#define TEST_HORIZONTAL_DISTANCE 2.0f // Distance to move in x direction
 
 int RobosubNavigator::print_status()
 {
@@ -134,11 +135,11 @@ void RobosubNavigator::movement_test() {
 		matrix::Vector3f current_pos(local_pos.x, local_pos.y, local_pos.z);
 
 		if (_task_head == _task_tail) {
-			add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(2.f, 0.f, 0.f), 0});
+			add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(TEST_HORIZONTAL_DISTANCE, 0.f, 0.f), 0});
 			add_task({NavTaskType::WAIT, {}, 1.0f});
 			add_task({NavTaskType::MOVE_XYZ, current_pos, 0});
 			add_task({NavTaskType::WAIT, {}, 1.0f});
-			add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(-2.f, 0.f, 0.f), 0});
+			add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(-TEST_HORIZONTAL_DISTANCE, 0.f, 0.f), 0});
 			add_task({NavTaskType::WAIT, {}, 1.0f});
 		}
 
