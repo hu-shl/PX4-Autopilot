@@ -46,172 +46,146 @@
 
 
 
-// #### PID GAIN PARAMETERS FOR X AXIS ####
+// #### PID PARAMETERS FOR X AXIS ####
+/**
+ * P gain of PID controller 1 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_X_P, 1.0f);
+/**
+ * I gain of PID controller 1 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_X_I, 1.0f);
+/**
+ * D gain of PID controller 1 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_X_D, 1.0f);
+/**
+ * I limit of PID controller 1 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_X_I_LIM, 1.0f);
+/**
+ * Output limit of PID controller 1 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_X_OP_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 1 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_X_OP_SCL, 1.0f);
 
 /**
- * Gain of P controller X
+ * P gain of PID controller 2 X-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_P_X_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID2_X_P, 1.0f);
 /**
- * Gain of PID P controller X
+ * I gain of PID controller 2 X-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_X_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID2_X_I, 1.0f);
 /**
- * Gain of PID I controller X
+ * D gain of PID controller 2 X-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_X_I, 1.0f);
-/**
- * Gain of PID D controller X
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_X_D, 1.0f);
-
-
-
-// #### PID GAIN PARAMETERS FOR Y AXIS ####
-/**
- * Gain of P controller Y
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_P_Y_P, 1.0f);
-/**
- * Gain of PID P controller Y
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_Y_P, 1.0f);
-/**
- * Gain of PID I controller Y
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_Y_I, 1.0f);
-/**
- * Gain of PID D controller Y
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_Y_D, 1.0f);
-
-
-
-// #### PID GAIN PARAMETERS FOR Z AXIS ####
-/**
- * Gain of P controller Z
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_P_Z_P, 1.0f);
-/**
- * Gain of PID P controller Z
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_Z_P, 1.0f);
-/**
- * Gain of PID I controller Z
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_Z_I, 1.0f);
-/**
- * Gain of PID D controller Z
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_Z_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID2_X_D, 1.0f);
 
 
 
-// #### PID GAIN PARAMETERS FOR ROLL ####
+// #### PID PARAMETERS FOR Y AXIS ####
 /**
- * Gain of P controller Roll
+ * P gain of PID controller 1 Y-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_P_ROLL_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID1_Y_P, 1.0f);
 /**
- * Gain of PID P controller Roll
+ * I gain of PID controller 1 Y-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_ROLL_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID1_Y_I, 1.0f);
 /**
- * Gain of PID I controller Roll
+ * D gain of PID controller 1 Y-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_ROLL_I, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID1_Y_D, 1.0f);
 /**
- * Gain of PID D controller Roll
+ * P gain of PID controller 2 Y-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_ROLL_D, 1.0f);
-
-
-// #### PID GAIN PARAMETERS FOR PITCH ####
+PARAM_DEFINE_FLOAT(RS_PID2_Y_P, 1.0f);
 /**
- * Gain of P controller Pitch
+ * I gain of PID controller 2 Y-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_P_PITCH_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID2_Y_I, 1.0f);
 /**
- * Gain of PID P controller Pitch
+ * D gain of PID controller 2 Y-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_PITCH_P, 1.0f);
-/**
- * Gain of PID I controller Pitch
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_PITCH_I, 1.0f);
-/**
- * Gain of PID D controller Pitch
- *
- * @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_PITCH_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID2_Y_D, 1.0f);
 
 
 
-// #### PID GAIN PARAMETERS FOR YAW ####
+// #### PID PARAMETERS FOR Z AXIS ####
 /**
- * Gain of P controller Yaw
+ * P gain of PID controller 1 Z-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_P_YAW_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID1_Z_P, 1.0f);
 /**
- * Gain of PID P controller Yaw
+ * I gain of PID controller 1 Z-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_YAW_P, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID1_Z_I, 1.0f);
 /**
- * Gain of PID I controller Yaw
+ * D gain of PID controller 1 Z-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_YAW_I, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID1_Z_D, 1.0f);
 /**
- * Gain of PID D controller Yaw
+ * P gain of PID controller 2 Z-axis
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_PID_YAW_D, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID2_Z_P, 1.0f);
+/**
+ * I gain of PID controller 2 Z-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_Z_I, 1.0f);
+/**
+ * D gain of PID controller 2 Z-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_Z_D, 1.0f);
 
+
+
+// #### PID GAIN PARAMETERS FOR PITCH AXIS ####
 
 
 // #### PID SETTINGS ####

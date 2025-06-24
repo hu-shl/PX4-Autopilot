@@ -85,35 +85,50 @@ using uORB::SubscriptionData;
 
 using namespace time_literals;
 
-typedef enum inputType
-{
-    INPUT_TYPE_POSITION = 0, // manual input
-    INPUT_TYPE_VELOCITY = 1,   // auto input
-} inputType_e;
+typedef enum PIDMode
+{                          //                                               Switch 1    Switch 2
+    PID_MODE_DISABLED = 0, // PID control is disabled                       DNC         L
+    PID_MODE_POSITION = 1, // PID control is in position mode               L           H
+    PID_MODE_VELOCITY = 2, // PID control is in velocity mode               H           H
+    PID_MODE_HOLD_POSITION = 3, // PID control is in hold position mode     L           H
+    PID_MODE_HOLD_VELOCITY = 4, // PID control is in hold velocity mode     H           H
+} PIDMode_e;
 
 typedef struct AxisPID
 {
-    float position_setpoint;
-    float velocity_setpoint;
+    // use pointers so that we dont have to copy the data
+    // setpoint
+    float* setpoint_ptr;
+    float _setpoint; // hold setpoint for position or velocity
 
-    float position_current;
-    float velocity_current;
+    // current data
+    float* feedback_ptr;
 
-    float P_gain;
-    float PID_P_gain;
-    float PID_I_gain;
-    float PID_D_gain;
 
-    float velocity_constraint;
-    float thrust_constraint;
+    // Position PID
+    float PID1_P_gain;          // PID gains
+    float PID1_I_gain;
+    float PID1_D_gain;
+    float PID1_I_limit;
+    float PID1_out_limit;       // output gains and limits
+    float PID1_out_scale;
 
-    uint64_t last_run_time; // last run time in microseconds
-    float delta_time;
+    // Velocity PID
+    float PID2_P_gain;          // PID gains
+    float PID2_I_gain;
+    float PID2_D_gain;
+    float PID2_I_limit;
+    float PID2_out_limit;       // output gains and limits
+    float PID2_out_scale;
 
-    float pid_output;
-    inputType_e input_type;
+    float pid_output;           // PID output value
 
-    PID PID_controller;
+    uint64_t last_run_time;     // last time the PID was run
+
+    PIDMode_e PID_mode;         // PID Mode
+
+    PID PID1;
+    PID PID2;                  // PID controllers for position and velocity
 } AxisPID_s;
 
 // MAIN CLASS
@@ -256,9 +271,9 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
 
         void run_axis_pid(AxisPID_s &axis);
 
-        void setpoint_position(AxisPID_s &axis, float position_setpoint, float position_current);
-        void setpoint_velocity(AxisPID_s &axis, float velocity_setpoint, float velocity_current);
-        void setpoint_hold_position(AxisPID_s &axis, float position_current);
+        float scale_and_limit(float val, float scale, float limit);
 
 
-};
+
+        void configure_axis(AxisPID_s &axis, PIDMode_e mode, float* current, float* setpoint, bool reset_on_change);
+    };

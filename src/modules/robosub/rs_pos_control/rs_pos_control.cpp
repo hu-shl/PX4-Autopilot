@@ -145,7 +145,7 @@ void RobosubPosControl::Run()
         // Start performance counter
         perf_begin(_loop_perf);
 
-                // update parameters if needed
+        // update parameters if needed
         if (parameters_update(_force_param.get()))
         {
                 X_Axis.P_gain = _p_gain_p_x.get();
@@ -189,97 +189,126 @@ void RobosubPosControl::Run()
                 Yaw_Axis.PID_D_gain = _pid_gain_d_yaw.get();
                 Yaw_Axis.velocity_constraint = _p_output_limit.get();
                 Yaw_Axis.thrust_constraint = _pid_output_limit.get();
-
         }
 
         _drone_task_sub.update(&_drone_task);                           // current mode of the drone
         _vehicle_local_position_sub.update(&_vehicle_local_position);   // x, y, z position and velocity
         _vehicle_attitude_sub.update(&_vehicle_attitude);               // roll, pitch, yaw attitude
-        _vehicle_angular_velocity_sub.update(&_vehicle_setpoint); // vehicle setpoint for position and attitude
+        _vehicle_angular_velocity_sub.update(&_vehicle_setpoint);       // vehicle setpoint for position and attitude
 
-        matrix::Eulerf current_attitude(_vehicle_attitude.q);
+        matrix::Quatf current_attitude_quat(_vehicle_attitude.q);
+
+        matrix::Eulerf current_attitude(current_attitude_quat.dcm_z());
+
+        // switch (_drone_task.task)
+        // {
+        // // case TASK_REMOTECONTROLLED:     // RAW Remote Control
+        //         // map remote control directly to output, bypassing PID control
+        //         enable_axis(X_Axis, false);
+        //         enable_axis(Y_Axis, false);
+        //         enable_axis(Z_Axis, false);
+        //         enable_axis(Roll_Axis, false);
+        //         enable_axis(Pitch_Axis, false);
+        //         enable_axis(Yaw_Axis, false);
+
+        //         break;
+
+        // // case TASK_BUOYANCYCRTL:         // Buoyancy Control
+        //         // Task: Disable all position control, exept for X and Y axis.
+
+        //         enable_axis(X_Axis, true);
+        //         enable_axis(Y_Axis, true);
+
+        //         enable_axis(Z_Axis, false);
+        //         enable_axis(Roll_Axis, false);
+        //         enable_axis(Pitch_Axis, false);
+        //         enable_axis(Yaw_Axis, false);
+
+        //         hold_position(X_Axis, _vehicle_local_position.x);
+        //         hold_position(Y_Axis, _vehicle_local_position.y);
+        //         break;
+
+        // // case TASK_SEARCHBUOY:           // Search Buoy Algo
+        // // case TASK_SEARCHTUBE:           // Search Tube Algo
+        //         // setup all axis for position control
+        //         // keep attitude setpoints at 0
+
+        //         enable_axis(X_Axis, true);
+        //         enable_axis(Y_Axis, true);
+        //         enable_axis(Z_Axis, true);
+        //         enable_axis(Roll_Axis, true);
+        //         enable_axis(Pitch_Axis, true);
+        //         enable_axis(Yaw_Axis, true);
+
+        //         setpoint_position(X_Axis, _trajectory_setpoint.position[0], _vehicle_local_position.x);
+        //         setpoint_position(Y_Axis, _trajectory_setpoint.position[1], _vehicle_local_position.y);
+        //         setpoint_position(Z_Axis, _trajectory_setpoint.position[2], _vehicle_local_position.z);
+        //         setpoint_position(Roll_Axis, 0, current_attitude.phi());
+        //         setpoint_position(Pitch_Axis, 0, current_attitude.theta());
+        //         setpoint_position(Yaw_Axis, 0, current_attitude.psi());
+        //         break;
+
+        // // case TASK_DPGOAL:               // Remote Controlled Positioning
+        // // case TASK_DPTELEARM:            // Remote Controlled arm
+        // // case TASK_TASK2:                // default initialisation
+        // // case TASK_TASK1:
+
+        // default: // in default state, keep position.
+        //         enable_axis(X_Axis, true);
+        //         enable_axis(Y_Axis, true);
+        //         enable_axis(Z_Axis, true);
+        //         enable_axis(Roll_Axis, true);
+        //         enable_axis(Pitch_Axis, true);
+        //         enable_axis(Yaw_Axis, true);
+
+        //         hold_position(X_Axis, _vehicle_local_position.x);
+        //         hold_position(Y_Axis, _vehicle_local_position.y);
+        //         hold_position(Z_Axis, _vehicle_local_position.z);
+
+        //         setpoint_position(Roll_Axis, _vehicle_setpoint.roll, 0);
+        //         setpoint_position(Pitch_Axis, _vehicle_setpoint.pitch, 0);
+        //         setpoint_position(Yaw_Axis, _vehicle_setpoint.yaw, 0);
+        //         break;
+        // }
 
 
-        switch(_drone_task.task)
-        {
-                case TASK_AUTONOMOUS:           // Vision AI Model
+                run_axis_pid(X_Axis);
+                run_axis_pid(Y_Axis);
+                run_axis_pid(Z_Axis);
+                run_axis_pid(Roll_Axis);
+                run_axis_pid(Pitch_Axis);
+                run_axis_pid(Yaw_Axis);
 
-                break;
+                if (_drone_task.task == 0)
+                {
+                        // if remote controlled, do not run PID control
+                        // publish the thrust setpoint
+                        publish_thrust_setpoint(_vehicle_setpoint.x,
+                                                0.0f,
+                                                _vehicle_setpoint.z);
 
-                case TASK_REMOTECONTROLLED:    // Raw Remote Control
-                break;
+                        // publish the torque setpoint
+                        publish_torque_setpoint(0.0f,
+                                                _vehicle_setpoint.pitch,
+                                                _vehicle_setpoint.yaw);
+                }
+                else
+                {
 
-                case TASK_REMOTE_PROCESSED:     // PID Remote Control
-                case TASK_REMOTE_POSITION:      // Remote Controlled position
-                case TASK_REINFORCED:           // RL AI Model
-                case TASK_TELEARM:              // Tele operated arm
-                case TASK_MISSIONPLANNING:      // default initialisation
+                        // publish the thrust setpoint
+                        publish_thrust_setpoint(X_Axis.pid_output,
+                                                Y_Axis.pid_output,
+                                                Z_Axis.pid_output);
 
-                default:                        // in default state, keep position.
-                RobosubPosControl::setpoint_hold_position(X_Axis, _vehicle_local_position.x);
-                RobosubPosControl::setpoint_hold_position(Y_Axis, _vehicle_local_position.y);
-                RobosubPosControl::setpoint_hold_position(Z_Axis, _vehicle_local_position.z);
-                RobosubPosControl::setpoint_hold_position(Roll_Axis);
-                RobosubPosControl::setpoint_hold_position(Pitch_Axis);
-                RobosubPosControl::setpoint_hold_position(Yaw_Axis);
-                break;
-        }
-
-
-
-
-        X_Axis.position_current = _vehicle_local_position.x;
-        X_Axis.velocity_current = _vehicle_local_position.vx;
-        X_Axis.position_setpoint = _vehicle_setpoint.x;
-        X_Axis.velocity_setpoint = _vehicle_setpoint.x;
-        X_Axis.input_type = INPUT_TYPE_VELOCITY;
-
-        Y_Axis.position_current = _vehicle_local_position.y;
-        Y_Axis.velocity_current = _vehicle_local_position.vy;
-        Y_Axis.position_setpoint = _vehicle_setpoint.y;
-        Y_Axis.velocity_setpoint = _vehicle_setpoint.y;
-        Y_Axis.input_type = INPUT_TYPE_VELOCITY;
-
-        Z_Axis.position_current = _vehicle_local_position.z;
-        Z_Axis.velocity_current = _vehicle_local_position.vz;
-        Z_Axis.position_setpoint = _vehicle_setpoint.z;
-        Z_Axis.velocity_setpoint = _vehicle_setpoint.z;
-        Z_Axis.input_type = INPUT_TYPE_POSITION;
-
-        Roll_Axis.position_current = _vehicle_attitude.roll;
-        Roll_Axis.velocity_current =
-        Roll_Axis.position_setpoint = _vehicle_setpoint.roll;
-        Roll_Axis.velocity_setpoint = 0;
-        Roll_Axis.input_type = INPUT_TYPE_POSITION;
-
-        Pitch_Axis.position_current = _vehicle_attitude.pitch;
-        Pitch_Axis.velocity_current =
-        Pitch_Axis.position_setpoint = _vehicle_setpoint.pitch;
-        Pitch_Axis.velocity_setpoint = 0;
-        Pitch_Axis.input_type = INPUT_TYPE_POSITION;
-
-        Yaw_Axis.position_current = _vehicle_attitude.yaw;
-        Yaw_Axis.velocity_current =
-        Yaw_Axis.position_setpoint = _vehicle_setpoint.yaw;
-        Yaw_Axis.velocity_setpoint = 0;
-        Yaw_Axis.input_type = INPUT_TYPE_POSITION;
-
-        run_axis_pid(X_Axis);
-        run_axis_pid(Y_Axis);
-        run_axis_pid(Z_Axis);
-        run_axis_pid(Roll_Axis);
-        run_axis_pid(Pitch_Axis);
-        run_axis_pid(Yaw_Axis);
-
-        // publish the thrust setpoint
-        publish_thrust_setpoint(X_Axis.pid_output, Y_Axis.pid_output, Z_Axis.pid_output);
-
-        // publish the torque setpoint
-        publish_torque_setpoint(Roll_Axis.pid_output, Pitch_Axis.pid_output, Yaw_Axis.pid_output);
-
+                        // publish the torque setpoint
+                        publish_torque_setpoint(Roll_Axis.pid_output,
+                                                Pitch_Axis.pid_output,
+                                                Yaw_Axis.pid_output);
+                }
 
         ScheduleDelayed(
-            1000000 / _pos_control_freq.get()); // Schedule next run at the desired frequency
+            1000000 / _pos_control_freq
+                          .get()); // Schedule next run at the desired frequency
 
         perf_end(_loop_perf);
 }
@@ -374,54 +403,100 @@ int rs_pos_control_main(int argc, char *argv[])
 
 void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
 {
-        // perform P controller: go from position to velocity
-        float position_error = axis.position_setpoint - axis.position_current;
-        float p_output = axis.P_gain * position_error;
-        float p_constrained_output = math::constrain(p_output, -axis.velocity_constraint, axis.velocity_constraint);
-
-        float velocity_setpoint = 0.0f;
-
-        // choose between position or velocity setpoint based on task
-        if (axis.input_type == INPUT_TYPE_POSITION)
+        if(axis.PID_mode <= PID_MODE_DISABLED || axis.PID_mode > PID_MODE_HOLD_VELOCITY)
         {
-                // if input is position, use the P output as velocity setpoint
-                axis.velocity_setpoint = p_constrained_output;
-        }
-        else if (axis.input_type == INPUT_TYPE_VELOCITY)
-        {
-                // if input is velocity, use the setpoint directly
-                axis.velocity_setpoint = axis.velocity_setpoint;
+                // if axis is in an unknown mode, do not run PID control
+                axis.pid_output = 0.0f;
+                axis.PID_mode = PID_MODE_DISABLED;
+                return;
         }
 
-        axis.delta_time = hrt_elapsed_time(&axis.last_run_time) / 1e6f; // convert to seconds
+        // dont use build in output limit, as we first want to scale the output
+        axis.PID1.setOutputLimit(axis.PID1_out_limit);
+        axis.PID1.setIntegralLimit(axis.PID1_I_limit);
+        axis.PID1.setGains(axis.PID1_P_gain, axis.PID1_I_gain, axis.PID1_D_gain);
+
+        axis.PID2.setOutputLimit(axis.PID2_out_limit);
+        axis.PID2.setIntegralLimit(axis.PID2_I_limit);
+        axis.PID2.setGains(axis.PID2_P_gain, axis.PID2_I_gain, axis.PID2_D_gain);
+
+        if(!(axis.PID_mode == PID_MODE_HOLD_POSITION || axis.PID_mode == PID_MODE_HOLD_VELOCITY))
+        {
+                // only update the setpoint if we are not in hold mode
+                axis._setpoint = *axis.setpoint_ptr;
+        }
+
+        // calculate delta time in seconds
+        float delta_time = hrt_elapsed_time(&axis.last_run_time) / 1e6f;
         axis.last_run_time = hrt_absolute_time(); // update last run time
 
-        axis.PID_controller.setSetpoint(velocity_setpoint);
-        axis.PID_controller.setGains(axis.PID_P_gain, axis.PID_I_gain, axis.PID_D_gain);
-        axis.PID_controller.setOutputLimit(axis.thrust_constraint);
-        axis.pid_output = axis.PID_controller.update(axis.velocity_current, axis.delta_time, true);
+        // run first PID
+        if(axis.PID_mode == PID_MODE_POSITION || axis.PID_mode == PID_MODE_HOLD_POSITION)
+        {
+                // set the setpoint
+                axis.PID1.setSetpoint(axis._setpoint);
+
+                // update the position PID controller with the current feedback
+                float PID1_output = axis.PID1.update(*axis.feedback_ptr, delta_time, true);
+
+                // scale and limit the output
+                PID1_output = scale_and_limit(PID1_output, axis.PID1_out_scale, axis.thrust_constraint);
+
+                axis.PID2.setSetpoint(PID1_output); // set the output of the position PID as setpoint for the velocity PID
+        }
+        else
+        {
+                // if we are in velocity mode, we can directly set the setpoint for the velocity PID
+                axis.PID2.setSetpoint(axis._setpoint);
+        }
+
+        // update the velocity PID controller with the current feedback
+        float PID2_output = axis.PID2.update(*axis.feedback_ptr, delta_time, true);
+        axis.pid_output = scale_and_limit(PID2_output, axis.PID2_out_scale, axis.PID2_out_limit);
+
+
 }
 
-void RobosubPosControl::setpoint_hold_position(AxisPID_s &axis, float position_current)
+float RobosubPosControl::scale_and_limit(float value, float scale, float limit)
 {
-        // keep this axis in the same position
-        axis.position_setpoint = position_current;
-        axis.velocity_setpoint = 0.0f; // Reset velocity setpoint to zero
-        axis.input_type = INPUT_TYPE_POSITION; // Set input type to position
+        // scale the value
+        value *= scale;
+
+        // constrain the value to the limit
+        return math::constrain(value, -limit, limit);
 }
 
-void RobosubPosControl::setpoint_velocity(AxisPID_s &axis, float velocity_setpoint, float velocity_current)
+
+/**
+ * @brief Configure an axis for PID control
+ */
+void RobosubPosControl::configure_axis(AxisPID_s &axis, PIDMode_e mode, float* feedback, float* setpoint, bool reset_on_change)
 {
-        // set the velocity setpoint for this axis
-        axis.velocity_setpoint = velocity_setpoint;
-        axis.velocity_current = velocity_current;
-        axis.input_type = INPUT_TYPE_VELOCITY; // Set input type to velocity
+        bool reset = false;
+
+        if(axis.PID_mode        != mode         ||
+           axis.feedback_ptr    != feedback      ||
+           axis.setpoint_ptr    != setpoint     &&
+           reset_on_change)
+        {
+                // if anything changed, reset the PID controllers if reset_on_change is true
+                reset = true;
+        }
+
+        // load data into the axis
+        axis.PID_mode = mode;
+        axis.feedback_ptr = feedback;
+        axis.setpoint_ptr = setpoint;
+
+        if(reset)
+        {
+        // reset the PID controllers if config changed
+        axis.PID1.resetDerivative();
+        axis.PID1.resetIntegral();
+
+        axis.PID2.resetDerivative();
+        axis.PID2.resetIntegral();
+        }
 }
 
-void RobosubPosControl::setpoint_position(AxisPID_s &axis, float position_setpoint, float position_current)
-{
-        // set the position setpoint for this axis
-        axis.position_setpoint = position_setpoint;
-        axis.position_current = position_current;
-        axis.input_type = INPUT_TYPE_POSITION; // Set input type to position
-}
+
