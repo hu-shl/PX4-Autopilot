@@ -1,252 +1,150 @@
-/****************************************************************************
- *
- *   Copyright (c) 2018 PX4 Development Team. All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in
- *    the documentation and/or other materials provided with the
- *    distribution.
- * 3. Neither the name PX4 nor the names of its contributors may be
- *    used to endorse or promote products derived from this software
- *    without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- * COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS
- * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
- * AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- * ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- * POSSIBILITY OF SUCH DAMAGE.
- *
- ****************************************************************************/
+#include "rs_arm_control.hpp"
 
- #include "rs_arm_control.hpp"
+#include <px4_platform_common/getopt.h>
+#include <px4_platform_common/log.h>
+#include <px4_platform_common/posix.h>
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/time.h>
+#include <math.h>
 
- #include <px4_platform_common/getopt.h>
- #include <px4_platform_common/log.h>
- #include <px4_platform_common/posix.h>
+#include <uORB/topics/parameter_update.h>
+#include <uORB/topics/sensor_combined.h>
 
- #include <uORB/topics/parameter_update.h>
- #include <uORB/topics/sensor_combined.h>
+extern "C" __EXPORT int rs_arm_control_main(int argc, char *argv[]);
 
+int RobosubArmControl::print_status() {
+	PX4_INFO("Running");
+	return 0;
+}
 
- int RobosubArmControl::print_status()
- {
-	 PX4_INFO("Running");
-	 // TODO: print additional runtime information about the state of the module
+int RobosubArmControl::custom_command(int argc, char *argv[]) {
+	return print_usage("unknown command");
+}
 
-	 return 0;
- }
+int RobosubArmControl::task_spawn(int argc, char *argv[]) {
+	RobosubArmControl *instance = new RobosubArmControl();
 
- int RobosubArmControl::custom_command(int argc, char *argv[])
- {
-	 /*
-	 if (!is_running()) {
-		 print_usage("not running");
-		 return 1;
-	 }
+	if (instance) {
+		_object.store(instance);
+		_task_id = task_id_is_work_queue;
 
-	 // additional custom commands can be handled like this:
-	 if (!strcmp(argv[0], "do-something")) {
-		 get_instance()->do_something();
-		 return 0;
-	 }
-	  */
-
-	 return print_usage("unknown command");
- }
-
-
- int RobosubArmControl::task_spawn(int argc, char *argv[])
- {
-	 _task_id = px4_task_spawn_cmd("module",
-				       SCHED_DEFAULT,
-				       SCHED_PRIORITY_DEFAULT,
-				       1024,
-				       (px4_main_t)&run_trampoline,
-				       (char *const *)argv);
-
-	 if (_task_id < 0) {
-		 _task_id = -1;
-		 return -errno;
-	 }
-
-	 return 0;
- }
-
- RobosubArmControl *RobosubArmControl::instantiate(int argc, char *argv[])
- {
-	 int example_param = 0;
-	 bool example_flag = false;
-	 bool error_flag = false;
-
-	 int myoptind = 1;
-	 int ch;
-	 const char *myoptarg = nullptr;
-
-	 // parse CLI arguments
-	 while ((ch = px4_getopt(argc, argv, "p:f", &myoptind, &myoptarg)) != EOF) {
-		 switch (ch) {
-		 case 'p':
-			 example_param = (int)strtol(myoptarg, nullptr, 10);
-			 break;
-
-		 case 'f':
-			 example_flag = true;
-			 break;
-
-		 case '?':
-			 error_flag = true;
-			 break;
-
-		 default:
-			 PX4_WARN("unrecognized flag");
-			 error_flag = true;
-			 break;
-		 }
-	 }
-
-	 if (error_flag) {
-		 return nullptr;
-	 }
-
-	 RobosubArmControl *instance = new RobosubArmControl(example_param, example_flag);
-
-	 if (instance == nullptr) {
-		 PX4_ERR("alloc failed");
-	 }
-
-	 return instance;
- }
-
- RobosubArmControl::RobosubArmControl(int example_param, bool example_flag)
-	 : ModuleParams(nullptr)
- {
- }
-
- void RobosubArmControl::run()
- {
-	 // Example: run the loop synchronized to the sensor_combined topic publication
-	 int sensor_combined_sub = orb_subscribe(ORB_ID(sensor_combined));
-
-	 px4_pollfd_struct_t fds[1];
-	 fds[0].fd = sensor_combined_sub;
-	 fds[0].events = POLLIN;
-
-	 // initialize parameters
-	 parameters_update(true);
-
-	 while (!should_exit()) {
-
-		 // wait for up to 1000ms for data
-		 int pret = px4_poll(fds, (sizeof(fds) / sizeof(fds[0])), 1000);
-
-		 if (pret == 0) {
-			 // Timeout: let the loop run anyway, don't do `continue` here
-
-		 } else if (pret < 0) {
-			 // this is undesirable but not much we can do
-			 PX4_ERR("poll error %d, %d", pret, errno);
-			 px4_usleep(50000);
-			 continue;
-
-		 } else if (fds[0].revents & POLLIN) {
-
-			 struct sensor_combined_s sensor_combined;
-			 orb_copy(ORB_ID(sensor_combined), sensor_combined_sub, &sensor_combined);
-			 // TODO: do something with the data...
-
-		 }
-
-		 parameters_update();
-	 }
-
-	 orb_unsubscribe(sensor_combined_sub);
- }
-
- void RobosubArmControl::teleoperated_arm() {
-
-	if (_input_rc_sub.update(&_input_rc)) {
-                _input_rc_sub.copy(&_rc_data);
-		// Normalize the rc data to a value between -1 and 1
-                normalized[0] = (_rc_data.values[1] - 1500) / 400.0f;
-                normalized[1] = (_rc_data.values[2] - 1500) / 400.0f;
-                normalized[2] = (_rc_data.values[3] - 1500) / 400.0f;
-                normalized[3] = (_rc_data.values[0] - 1500) / 400.0f;
-
-                normalized[0] = math::constrain(normalized[0],  -1.0f, 1.0f);
-		normalized[1] = math::constrain(normalized[1],  -1.0f, 1.0f);
-		normalized[2] = math::constrain(normalized[2],  -1.0f, 1.0f);
-		normalized[3] = math::constrain(normalized[3],  -1.0f, 1.0f);
-
-		if (normalized[0] )
+		if (instance->Init()) {
+			return PX4_OK;
+		}
 	}
 
- }
+	delete instance;
+	_object.store(nullptr);
+	_task_id = -1;
 
- uint16_t RobosubArmControl::servo_angle(int8_t direction, uint16_t angle)
- {
-	uint16_t newAngle = (angle + 1 * direction)
+	return PX4_ERROR;
+}
 
-	return newAngle;
- }
+bool RobosubArmControl::Init() {
+	ScheduleOnInterval(100_ms);
+	PX4_DEBUG("RobosubArmControl::init()");
+	return true;
+}
 
- void RobosubArmControl::parameters_update(bool force)
- {
-	 // check for parameter updates
-	 if (_parameter_update_sub.updated() || force) {
-		 // clear update
-		 parameter_update_s update;
-		 _parameter_update_sub.copy(&update);
+RobosubArmControl::RobosubArmControl()
+	: ModuleParams(nullptr),
+	  ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
+	  _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": cycle")) {}
 
-		 // update parameters from storage
-		 updateParams();
-	 }
- }
+RobosubArmControl::~RobosubArmControl() {
+	// Cleanup if needed
+}
 
- int RobosubArmControl::print_usage(const char *reason)
- {
-	 if (reason) {
-		 PX4_WARN("%s\n", reason);
-	 }
+void RobosubArmControl::Run() {
+	perf_begin(_loop_perf);
 
-	 PRINT_MODULE_DESCRIPTION(
-		 R"DESCR_STR(
- ### Description
- Section that describes the provided module functionality.
+	teleoperated_arm();
 
- This is a template for a module running as a task in the background with start/stop/status functionality.
+	perf_end(_loop_perf);
+}
 
- ### Implementation
- Section describing the high-level implementation of this module.
+void RobosubArmControl::teleoperated_arm() {
+	if (_input_rc_sub.update(&_input_rc)) {
+		_input_rc_sub.copy(&_input_rc);
 
- ### Examples
- CLI usage example:
- $ module start -f -p 42
+		normalized[0] = (_input_rc.values[1] - 1500) / 400.0f;
+		normalized[1] = (_input_rc.values[2] - 1500) / 400.0f;
+		normalized[2] = (_input_rc.values[3] - 1500) / 400.0f;
+		normalized[3] = (_input_rc.values[0] - 1500) / 400.0f;
 
- )DESCR_STR");
+		for (int i = 0; i < 4; i++) {
+			normalized[i] = math::constrain(normalized[i], -1.0f, 1.0f);
+		}
 
-	 PRINT_MODULE_USAGE_NAME("module", "rs arm control");
-	 PRINT_MODULE_USAGE_COMMAND("start");
-	 PRINT_MODULE_USAGE_PARAM_FLAG('f', "Optional example flag", true);
-	 PRINT_MODULE_USAGE_PARAM_INT('p', 0, 0, 1000, "Optional example parameter", true);
-	 PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+		if (fabsf(normalized[0]) < THRESHOLD)
+			states[SEG1] = HOLD;
+		else if (normalized[0] < 0)
+			states[SEG1] = EXTEND;
+		else
+			states[SEG1] = CONTRACT;
 
-	 return 0;
- }
+		if (fabsf(normalized[1]) < THRESHOLD)
+			states[SEG2] = HOLD;
+		else if (normalized[1] < 0)
+			states[SEG2] = EXTEND;
+		else
+			states[SEG2] = CONTRACT;
 
- int rs_arm_control_main(int argc, char *argv[])
- {
-	 return RobosubArmControl::main(argc, argv);
- }
+		if (normalized[2] < -THRESHOLD) {
+			if (normalized[2] >= -0.45f)
+				states[BASE] = CONTRACT;
+			else
+				states[BASE] = EXTEND;
+		} else if (normalized[2] > THRESHOLD) {
+			states[GRIP] = EXTEND;
+		} else {
+			states[BASE] = HOLD;
+			states[GRIP] = HOLD;
+		}
+
+		if (fabsf(normalized[3]) < THRESHOLD)
+			states[SEG3] = HOLD;
+		else if (normalized[3] < 0)
+			states[SEG3] = EXTEND;
+		else
+			states[SEG3] = CONTRACT;
+	}
+}
+
+void RobosubArmControl::parameters_update(bool force) {
+	if (_parameter_update_sub.updated() || force) {
+		parameter_update_s update;
+		_parameter_update_sub.copy(&update);
+		updateParams();
+	}
+}
+
+int RobosubArmControl::print_usage(const char *reason) {
+	if (reason) {
+		PX4_WARN("%s\n", reason);
+	}
+
+	PRINT_MODULE_DESCRIPTION(
+		R"DESCR_STR(
+### Description
+Control code for Robosub's robotic arm.
+
+### Implementation
+Uses ScheduledWorkItem to periodically run logic based on RC inputs.
+
+### Examples
+CLI usage example:
+$ rs_arm_control start
+
+)DESCR_STR");
+
+	PRINT_MODULE_USAGE_NAME("rs_arm_control", "robosub");
+	PRINT_MODULE_USAGE_COMMAND("start");
+	PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+
+	return 0;
+}
+
+int rs_arm_control_main(int argc, char *argv[]) {
+	return RobosubArmControl::main(argc, argv);
+}

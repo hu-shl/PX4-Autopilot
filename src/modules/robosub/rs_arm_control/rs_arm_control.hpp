@@ -35,27 +35,31 @@
 
  #include <px4_platform_common/module.h>
  #include <px4_platform_common/module_params.h>
+ #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
  #include <uORB/SubscriptionInterval.hpp>
+ #include <uORB/SubscriptionCallback.hpp>
+ #include <uORB/Publication.hpp>
  #include <uORB/topics/parameter_update.h>
  #include <uORB/topics/input_rc.h>
+ #include <uORB/topics/arm_ctrl.h>
+ #include <lib/perf/perf_counter.h>
 
  using namespace time_literals;
 
  extern "C" __EXPORT int rs_arm_control_main(int argc, char *argv[]);
 
 
- class RobosubArmControl : public ModuleBase<RobosubArmControl>, public ModuleParams
+ class RobosubArmControl : public ModuleBase<RobosubArmControl>, public ModuleParams, public px4::ScheduledWorkItem
  {
  public:
-	 RobosubArmControl(int example_param, bool example_flag);
+	 RobosubArmControl();
 
-	 virtual ~RobosubArmControl() = default;
+	 ~RobosubArmControl();
 
 	 /** @see ModuleBase */
 	 static int task_spawn(int argc, char *argv[]);
 
-	 /** @see ModuleBase */
-	 static RobosubArmControl *instantiate(int argc, char *argv[]);
+	 bool Init();
 
 	 /** @see ModuleBase */
 	 static int custom_command(int argc, char *argv[]);
@@ -64,7 +68,7 @@
 	 static int print_usage(const char *reason = nullptr);
 
 	 /** @see ModuleBase::run() */
-	 void run() override;
+	 void Run() override;
 
 	 /** @see ModuleBase::print_status() */
 	 int print_status() override;
@@ -76,8 +80,28 @@
 	  * @param parameter_update_sub uorb subscription to parameter_update
 	  * @param force for a parameter update
 	  */
+	 #define THRESHOLD 0.2f
+	 #define HOLD 0
+	 #define EXTEND 1
+	 #define CONTRACT 2
 
-	 uint16_t angles[6] = {90, 90, 90, 90, 90, 90};
+	 perf_counter_t _loop_perf;
+
+	 float normalized[8];
+
+	 typedef enum {
+   	 SEG1     = 0,
+    	 SEG2     = 1,
+     	 SEG3     = 2,
+    	 BASE     = 3,
+    	 GRIPROT  = 4,
+    	 GRIP     = 5
+	 } arm_map_t;
+
+
+	 arm_map_t arm_map;
+
+	 uint16_t states[6] = {0, 0, 0, 0, 0, 0};
 
 	 void teleoperated_arm();
 	 uint16_t servo_angle(int8_t direction, uint16_t angle);
@@ -90,9 +114,14 @@
 		 (ParamInt<px4::params::SYS_AUTOCONFIG>) _param_sys_autoconfig  /**< another parameter */
 	 )
 
+	 // Publications
+	 uORB::Publication<arm_ctrl_s> 	_arm_ctrl_pub{ORB_ID(arm_ctrl)};
+
+	 arm_ctrl_s _arm_ctrl{};
+
 	 // Subscriptions
 	 uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 	 uORB::SubscriptionCallbackWorkItem 	_input_rc_sub{this, ORB_ID(input_rc)};
-	 _input_rc_s _input_rc{};
+	 input_rc_s _input_rc{};
 
  };

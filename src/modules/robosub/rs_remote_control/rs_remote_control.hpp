@@ -122,7 +122,7 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         float outputT200 = 0.0f;
         float kP = 1.0f;
         float kI = 1.0f;
-        float kD = 1.0f;
+        float kD = 1.0f; 
 
         float calculate_absolute_humidity(float rel_humidity, float temperature);
 
