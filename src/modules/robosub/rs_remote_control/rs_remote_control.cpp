@@ -270,12 +270,12 @@ void RobosubRemoteControl::remote_buoyancy(){
 			normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
                         normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
                         normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
-                        normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
+                        // normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
 
 			normalized[0] = math::constrain(normalized[0],  -range, range);
 			normalized[1] = math::constrain(normalized[1],  -range, range);
 			normalized[2] = math::constrain(normalized[2],  -range, range);
-			normalized[3] = math::constrain(normalized[3],  -range, range);
+			// normalized[3] = math::constrain(normalized[3],  -range, range);
 
 			if(normalized[0] >= -THRESHOLD && normalized[0] <= THRESHOLD)
 				_buoyancy_ctrl.states[0] = KEEP;
@@ -298,12 +298,13 @@ void RobosubRemoteControl::remote_buoyancy(){
 			else if(normalized[2] <= THRESHOLD)
 				_buoyancy_ctrl.states[2] = EMPTY;
 
-			if(normalized[3] >= -THRESHOLD && normalized[3] <= THRESHOLD)
-				_buoyancy_ctrl.states[3] = KEEP;
-			else if(normalized[3] >= THRESHOLD)
-				_buoyancy_ctrl.states[3] = FILL;
-			else if(normalized[3] <= THRESHOLD)
-				_buoyancy_ctrl.states[3] = EMPTY;
+			// if(normalized[3] >= -THRESHOLD && normalized[3] <= THRESHOLD)
+			// 	_buoyancy_ctrl.states[3] = KEEP;
+			// else if(normalized[3] >= THRESHOLD)
+			// 	_buoyancy_ctrl.states[3] = FILL;
+			// else if(normalized[3] <= THRESHOLD)
+			// 	_buoyancy_ctrl.states[3] = EMPTY;
+			_buoyancy_ctrl_states[3] = KEEP;
 
 			_buoyancy_ctrl.timestamp = hrt_absolute_time();
 			_buoyancy_ctrl_pub.publish(_buoyancy_ctrl);
