@@ -56,14 +56,14 @@
  {
  public:
 
-	#define TASK_MISSIONPLANNING 0b000	// 0
-	#define TASK_REINFORCED 0b001		// 1
-	#define TASK_AUTONOMOUS 0b010		// 2
-	#define TASK_TELEARM 0b011		// 3
-	// yet to be defined task 4
-	#define TASK_REMOTE_POSITION 0b101	// 5
-	#define TASK_REMOTE_PROCESSED 0b110	// 6
-	#define TASK_REMOTE_CONTROLLED 0b111	// 7
+        #define TASK_REMOTECONTROLLED  0b000
+        #define TASK_BUOYANCYCTRL       0b001
+        #define TASK_DPGOAL             0b010
+        #define TASK_DPTELEARM          0b011
+        #define TASK_SEARCHBUOY         0b100
+        #define TASK_SEARCHTUBE         0b101
+        #define TASK_TASK2              0b110
+        #define TASK_TASK1              0b111
 
 
 	enum MotorID {

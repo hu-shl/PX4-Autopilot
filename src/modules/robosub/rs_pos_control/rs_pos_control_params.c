@@ -83,7 +83,6 @@ PARAM_DEFINE_FLOAT(RS_PID1_X_OP_LIM, 1.0f);
  * @group RS Position Control
  */
 PARAM_DEFINE_FLOAT(RS_PID1_X_OP_SCL, 1.0f);
-
 /**
  * P gain of PID controller 2 X-axis
  *
@@ -102,6 +101,20 @@ PARAM_DEFINE_FLOAT(RS_PID2_X_I, 1.0f);
  * @group RS Position Control
  */
 PARAM_DEFINE_FLOAT(RS_PID2_X_D, 1.0f);
+/**
+ * I limit of PID controller 2 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_X_I_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 2 X-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_X_OP_SCL, 1.0f);
+
+
 
 
 
@@ -125,6 +138,24 @@ PARAM_DEFINE_FLOAT(RS_PID1_Y_I, 1.0f);
  */
 PARAM_DEFINE_FLOAT(RS_PID1_Y_D, 1.0f);
 /**
+ * I limit of PID controller 1 Y-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_Y_I_LIM, 1.0f);
+/**
+ * Output limit of PID controller 1 Y-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_Y_OP_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 1 Y-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_Y_OP_SCL, 1.0f);
+/**
  * P gain of PID controller 2 Y-axis
  *
  * @group RS Position Control
@@ -142,6 +173,20 @@ PARAM_DEFINE_FLOAT(RS_PID2_Y_I, 1.0f);
  * @group RS Position Control
  */
 PARAM_DEFINE_FLOAT(RS_PID2_Y_D, 1.0f);
+/**
+ * I limit of PID controller 2 Y-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_Y_I_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 2 Y-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_Y_OP_SCL, 1.0f);
+
+
 
 
 
@@ -165,6 +210,24 @@ PARAM_DEFINE_FLOAT(RS_PID1_Z_I, 1.0f);
  */
 PARAM_DEFINE_FLOAT(RS_PID1_Z_D, 1.0f);
 /**
+ * I limit of PID controller 1 Z-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_Z_I_LIM, 1.0f);
+/**
+ * Output limit of PID controller 1 Z-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_Z_OP_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 1 Z-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_Z_OP_SCL, 1.0f);
+/**
  * P gain of PID controller 2 Z-axis
  *
  * @group RS Position Control
@@ -182,25 +245,252 @@ PARAM_DEFINE_FLOAT(RS_PID2_Z_I, 1.0f);
  * @group RS Position Control
  */
 PARAM_DEFINE_FLOAT(RS_PID2_Z_D, 1.0f);
+/**
+ * I limit of PID controller 2 Z-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_Z_I_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 2 Z-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_Z_OP_SCL, 1.0f);
 
 
 
-// #### PID GAIN PARAMETERS FOR PITCH AXIS ####
+
+
+// #### PID PARAMETERS FOR PITCH AXIS ####
+// to keep the names under 16 characters,
+// we use A instead of Pitch
+/**
+ * P gain of PID controller 1 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_A_P, 1.0f);
+/**
+ * I gain of PID controller 1 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_A_I, 1.0f);
+/**
+ * D gain of PID controller 1 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_A_D, 1.0f);
+/**
+ * I limit of PID controller 1 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_A_I_LIM, 1.0f);
+/**
+ * Output limit of PID controller 1 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_A_OP_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 1 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_A_OP_SCL, 1.0f);
+/**
+ * P gain of PID controller 2 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_A_P, 1.0f);
+/**
+ * I gain of PID controller 2 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_A_I, 1.0f);
+/**
+ * D gain of PID controller 2 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_A_D, 1.0f);
+/**
+ * I limit of PID controller 2 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_A_I_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 2 Pitch-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_A_OP_SCL, 1.0f);
+
+
+
+
+
+// #### PID PARAMETERS FOR ROLL AXIS ####
+// to keep the names under 16 characters,
+// we use B instead of Roll
+/**
+ * P gain of PID controller 1 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_B_P, 1.0f);
+/**
+ * I gain of PID controller 1 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_B_I, 1.0f);
+/**
+ * D gain of PID controller 1 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_B_D, 1.0f);
+/**
+ * I limit of PID controller 1 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_B_I_LIM, 1.0f);
+/**
+ * Output limit of PID controller 1 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_B_OP_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 1 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_B_OP_SCL, 1.0f);
+/**
+ * P gain of PID controller 2 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_B_P, 1.0f);
+/**
+ * I gain of PID controller 2 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_B_I, 1.0f);
+/**
+ * D gain of PID controller 2 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_B_D, 1.0f);
+/**
+ * I limit of PID controller 2 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_B_I_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 2 Roll-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_B_OP_SCL, 1.0f);
+
+
+
+
+
+// #### PID PARAMETERS FOR YAW AXIS ####
+// to keep the names under 16 characters,
+// we use C instead of Yaw
+/**
+ * P gain of PID controller 1 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_C_P, 1.0f);
+/**
+ * I gain of PID controller 1 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_C_I, 1.0f);
+/**
+ * D gain of PID controller 1 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_C_D, 1.0f);
+/**
+ * I limit of PID controller 1 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_C_I_LIM, 1.0f);
+/**
+ * Output limit of PID controller 1 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_C_OP_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 1 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID1_C_OP_SCL, 1.0f);
+/**
+ * P gain of PID controller 2 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_C_P, 1.0f);
+/**
+ * I gain of PID controller 2 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_C_I, 1.0f);
+/**
+ * D gain of PID controller 2 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_C_D, 1.0f);
+/**
+ * I limit of PID controller 2 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_C_I_LIM, 1.0f);
+/**
+ * Output scaling of PID controller 2 Yaw-axis
+ *
+ * @group RS Position Control
+ */
+PARAM_DEFINE_FLOAT(RS_PID2_C_OP_SCL, 1.0f);
+
+
+
 
 
 // #### PID SETTINGS ####
 /**
- * Integral limit for the position control loop
+ * Global Output limit for PID 2 controllers
  *
  * @group RS Position Control
  */
-PARAM_DEFINE_FLOAT(RS_P_OUT_LIM, 100.0f);
-/**
- * Output limit for the position control loop
- *
- *  @group RS Position Control
- */
-PARAM_DEFINE_FLOAT(RS_PID_OUT_LIM, 1.0f);
+PARAM_DEFINE_FLOAT(RS_PID2_OP_LIM, 1.0f);
 /**
  * Frequency of the position control loop (Hz)
  *

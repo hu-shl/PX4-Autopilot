@@ -59,8 +59,7 @@
 #include <uORB/topics/parameter_update.h>
 
 // Setpoints
-#include <uORB/topics/trajectory_setpoint.h>                // used for Vision AI model
-#include <uORB/topics/vehicle_position_attitude_setpoint.h> // used for Remote Control                    // drone task subscription
+#include <uORB/topics/trajectory_setpoint.h>                // used for Vision AI model                // drone task subscription
 
 // Current data
 #include <uORB/topics/drone_task.h>
@@ -161,24 +160,17 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
         AxisPID_s Yaw_Axis;
 
         // uORB subscriptions
-        uORB::Subscription _manual_control_setpoint_sub{
-            ORB_ID(rs_manual_setpoint)};                        // manual control setpoint subscription
-
-        uORB::Subscription _auto_control_setpoint_sub{
-            ORB_ID(rs_auto_setpoint)};                          // auto control setpoint subscription
-
         uORB::Subscription _drone_task_sub{
             ORB_ID(drone_task)};                                // drone task subscription
 
-        uORB::Subscription _vehicle_local_position_sub{ORB_ID(
-            vehicle_local_position)};                           // vehicle local position subscription
+        uORB::Subscription _vehicle_local_position_sub{
+            ORB_ID(vehicle_local_position)};                           // vehicle local position subscription
 
         uORB::Subscription _vehicle_attitude_sub{
             ORB_ID(vehicle_attitude)};                          // vehicle attitude subscription
 
         uORB::Subscription _vehicle_angular_velocity_sub{
             ORB_ID(vehicle_angular_velocity)};                  // vehicle angular velocity subscription
-
 
         uORB::Subscription _trajectory_setpoint_sub{
             ORB_ID(trajectory_setpoint)};                       // vehicle trajectory setpoint subscription
@@ -195,9 +187,6 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
 
         perf_counter_t _loop_perf;
 
-        // Define subscription variables
-        vehicle_position_attitude_setpoint_s
-            _vehicle_setpoint{}; // manual control setpoint
         trajectory_setpoint_s
             _trajectory_setpoint{}; // vehicle trajectory setpoint
         drone_task_s
@@ -210,9 +199,6 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
             _vehicle_angular_velocity{}; // vehicle angular velocity
 
 
-
-
-
         // Define publication variables
         vehicle_thrust_setpoint_s
             _vehicle_thrust_setpoint{}; // vehicle thrust setpoint
@@ -220,41 +206,84 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
             _vehicle_torque_setpoint{}; // vehicle torque setpoint
 
         DEFINE_PARAMETERS(
-            (ParamFloat<px4::params::RS_P_X_P>)_p_gain_p_x, // PID gains for X axis
-            (ParamFloat<px4::params::RS_PID_X_P>)_pid_gain_p_x,
-            (ParamFloat<px4::params::RS_PID_X_I>)_pid_gain_i_x,
-            (ParamFloat<px4::params::RS_PID_X_D>)_pid_gain_d_x,
+            (ParamFloat<px4::params::RS_PID1_X_P>)_pid1_gain_x_p, // PID gains for X axis
+            (ParamFloat<px4::params::RS_PID1_X_I>)_pid1_gain_x_i,
+            (ParamFloat<px4::params::RS_PID1_X_D>)_pid1_gain_x_d,
+            (ParamFloat<px4::params::RS_PID1_X_I_LIM>)_pid1_i_limit_x,
+            (ParamFloat<px4::params::RS_PID1_X_OP_LIM>)_pid1_output_limit_x, // PID output limit for X axis
+            (ParamFloat<px4::params::RS_PID1_X_OP_SCL>)_pid1_output_scale_x, // PID output scale for X axis
+            (ParamFloat<px4::params::RS_PID2_X_P>)_pid2_gain_x_p, // PID gains for X axis
+            (ParamFloat<px4::params::RS_PID2_X_I>)_pid2_gain_x_i,
+            (ParamFloat<px4::params::RS_PID2_X_D>)_pid2_gain_x_d,
+            (ParamFloat<px4::params::RS_PID2_X_I_LIM>)_pid2_i_limit_x,
+            (ParamFloat<px4::params::RS_PID2_X_OP_SCL>)_pid2_output_scale_x, // PID output scale for X axis
 
-            (ParamFloat<px4::params::RS_P_Y_P>)_p_gain_p_y, // PID gains for Y axis
-            (ParamFloat<px4::params::RS_PID_Y_P>)_pid_gain_p_y,
-            (ParamFloat<px4::params::RS_PID_Y_I>)_pid_gain_i_y,
-            (ParamFloat<px4::params::RS_PID_Y_D>)_pid_gain_d_y,
+            (ParamFloat<px4::params::RS_PID1_Y_P>)_pid1_gain_y_p, // PID output limit for X axis
+            (ParamFloat<px4::params::RS_PID1_Y_I>)_pid1_gain_y_i, // PID gains for Y axis
+            (ParamFloat<px4::params::RS_PID1_Y_D>)_pid1_gain_y_d,
+            (ParamFloat<px4::params::RS_PID1_Y_I_LIM>)_pid1_i_limit_y,
+            (ParamFloat<px4::params::RS_PID1_Y_OP_LIM>)_pid1_output_limit_y, // PID output limit for Y axis
+            (ParamFloat<px4::params::RS_PID1_Y_OP_SCL>)_pid1_output_scale_y, // PID output scale for Y axis
+            (ParamFloat<px4::params::RS_PID2_Y_P>)_pid2_gain_y_p, // PID gains for Y axis
+            (ParamFloat<px4::params::RS_PID2_Y_I>)_pid2_gain_y_i,
+            (ParamFloat<px4::params::RS_PID2_Y_D>)_pid2_gain_y_d,
+            (ParamFloat<px4::params::RS_PID2_Y_I_LIM>)_pid2_i_limit_y,
+            (ParamFloat<px4::params::RS_PID2_Y_OP_SCL>)_pid2_output_scale_y, // PID output scale for Y axis
 
-            (ParamFloat<px4::params::RS_P_Z_P>)_p_gain_p_z, // PID gains for Z axis
-            (ParamFloat<px4::params::RS_PID_Z_P>)_pid_gain_p_z,
-            (ParamFloat<px4::params::RS_PID_Z_I>)_pid_gain_i_z,
-            (ParamFloat<px4::params::RS_PID_Z_D>)_pid_gain_d_z,
+            (ParamFloat<px4::params::RS_PID1_Z_P>)_pid1_gain_z_p, // PID output limit for Y axis
+            (ParamFloat<px4::params::RS_PID1_Z_I>)_pid1_gain_z_i, // PID gains for Z axis
+            (ParamFloat<px4::params::RS_PID1_Z_D>)_pid1_gain_z_d,
+            (ParamFloat<px4::params::RS_PID1_Z_I_LIM>)_pid1_i_limit_z,
+            (ParamFloat<px4::params::RS_PID1_Z_OP_LIM>)_pid1_output_limit_z, // PID output limit for Z axis
+            (ParamFloat<px4::params::RS_PID1_Z_OP_SCL>)_pid1_output_scale_z, // PID output scale for Z axis
+            (ParamFloat<px4::params::RS_PID2_Z_P>)_pid2_gain_z_p, // PID gains for Z axis
+            (ParamFloat<px4::params::RS_PID2_Z_I>)_pid2_gain_z_i,
+            (ParamFloat<px4::params::RS_PID2_Z_D>)_pid2_gain_z_d,
+            (ParamFloat<px4::params::RS_PID2_Z_I_LIM>)_pid2_i_limit_z,
+            (ParamFloat<px4::params::RS_PID2_Z_OP_SCL>)_pid2_output_scale_z, // PID output scale for Z axis
 
-            (ParamFloat<px4::params::RS_P_ROLL_P>)_p_gain_p_roll, // PID gains for Roll axis
-            (ParamFloat<px4::params::RS_PID_ROLL_P>)_pid_gain_p_roll,
-            (ParamFloat<px4::params::RS_PID_ROLL_I>)_pid_gain_i_roll,
-            (ParamFloat<px4::params::RS_PID_ROLL_D>)_pid_gain_d_roll,
+            (ParamFloat<px4::params::RS_PID1_A_P>)_pid1_gain_pitch_p, // PID output limit for Z axis
+            (ParamFloat<px4::params::RS_PID1_A_I>)_pid1_gain_pitch_i, // PID gains for Pitch axis
+            (ParamFloat<px4::params::RS_PID1_A_D>)_pid1_gain_pitch_d,
+            (ParamFloat<px4::params::RS_PID1_A_I_LIM>)_pid1_i_limit_pitch,
+            (ParamFloat<px4::params::RS_PID1_A_OP_LIM>)_pid1_output_limit_pitch, // PID output limit for Pitch axis
+            (ParamFloat<px4::params::RS_PID1_A_OP_SCL>)_pid1_output_scale_pitch, // PID output scale for Pitch axis
+            (ParamFloat<px4::params::RS_PID2_A_P>)_pid2_gain_pitch_p, // PID gains for Pitch axis
+            (ParamFloat<px4::params::RS_PID2_A_I>)_pid2_gain_pitch_i,
+            (ParamFloat<px4::params::RS_PID2_A_D>)_pid2_gain_pitch_d,
+            (ParamFloat<px4::params::RS_PID2_A_I_LIM>)_pid2_i_limit_pitch,
+            (ParamFloat<px4::params::RS_PID2_A_OP_SCL>)_pid2_output_scale_pitch, // PID output scale for Pitch axis
 
-            (ParamFloat<px4::params::RS_P_PITCH_P>)_p_gain_p_pitch, // PID gains for Pitch axis
-            (ParamFloat<px4::params::RS_PID_PITCH_P>)_pid_gain_p_pitch,
-            (ParamFloat<px4::params::RS_PID_PITCH_I>)_pid_gain_i_pitch,
-            (ParamFloat<px4::params::RS_PID_PITCH_D>)_pid_gain_d_pitch,
+            (ParamFloat<px4::params::RS_PID1_B_P>)_pid1_gain_roll_p, // PID output limit for Roll axis
+            (ParamFloat<px4::params::RS_PID1_B_I>)_pid1_gain_roll_i, // PID gains for Roll axis
+            (ParamFloat<px4::params::RS_PID1_B_D>)_pid1_gain_roll_d,
+            (ParamFloat<px4::params::RS_PID1_B_I_LIM>)_pid1_i_limit_roll,
+            (ParamFloat<px4::params::RS_PID1_B_OP_LIM>)_pid1_output_limit_roll, // PID output limit for Roll axis
+            (ParamFloat<px4::params::RS_PID1_B_OP_SCL>)_pid1_output_scale_roll, // PID output scale for Roll axis
+            (ParamFloat<px4::params::RS_PID2_B_P>)_pid2_gain_roll_p, // PID gains for Roll axis
+            (ParamFloat<px4::params::RS_PID2_B_I>)_pid2_gain_roll_i,
+            (ParamFloat<px4::params::RS_PID2_B_D>)_pid2_gain_roll_d,
+            (ParamFloat<px4::params::RS_PID2_B_I_LIM>)_pid2_i_limit_roll,
+            (ParamFloat<px4::params::RS_PID2_B_OP_SCL>)_pid2_output_scale_roll, // PID output scale for Roll axis
 
-            (ParamFloat<px4::params::RS_P_YAW_P>)_p_gain_p_yaw, // PID gains for Yaw axis
-            (ParamFloat<px4::params::RS_PID_YAW_P>)_pid_gain_p_yaw,
-            (ParamFloat<px4::params::RS_PID_YAW_I>)_pid_gain_i_yaw,
-            (ParamFloat<px4::params::RS_PID_YAW_D>)_pid_gain_d_yaw,
+            (ParamFloat<px4::params::RS_PID1_C_P>)_pid1_gain_yaw_p, // PID output limit for Yaw axis
+            (ParamFloat<px4::params::RS_PID1_C_I>)_pid1_gain_yaw_i, // PID gains for Yaw axis
+            (ParamFloat<px4::params::RS_PID1_C_D>)_pid1_gain_yaw_d,
+            (ParamFloat<px4::params::RS_PID1_C_I_LIM>)_pid1_i_limit_yaw,
+            (ParamFloat<px4::params::RS_PID1_C_OP_LIM>)_pid1_output_limit_yaw, // PID output limit for Yaw axis
+            (ParamFloat<px4::params::RS_PID1_C_OP_SCL>)_pid1_output_scale_yaw, // PID output scale for Yaw axis
+            (ParamFloat<px4::params::RS_PID2_C_P>)_pid2_gain_yaw_p, // PID gains for Yaw axis
+            (ParamFloat<px4::params::RS_PID2_C_I>)_pid2_gain_yaw_i,
+            (ParamFloat<px4::params::RS_PID2_C_D>)_pid2_gain_yaw_d,
+            (ParamFloat<px4::params::RS_PID2_C_I_LIM>)_pid2_i_limit_yaw,
+            (ParamFloat<px4::params::RS_PID2_C_OP_SCL>)_pid2_output_scale_yaw, // PID output scale for Yaw axis
 
-            (ParamInt<px4::params::RS_POS_CTRL_FREQ>)_pos_control_freq, // control frequency
-            (ParamInt<px4::params::RS_FORCE_PARAMS>)_force_param, // control frequency
-            (ParamFloat<px4::params::RS_P_OUT_LIM>)_p_output_limit, // p output limit
-            (ParamFloat<px4::params::RS_PID_OUT_LIM>)_pid_output_limit // pid output limit
+            (ParamFloat<px4::params::RS_PID2_OP_LIM>)_pid2_output_limit, // PID output limit for all axes
+            (ParamInt<px4::params::RS_POS_CTRL_FREQ>)_pid_frequency, // force parameter update
+            (ParamInt<px4::params::RS_FORCE_PARAMS>)_force_param // PID mode parameter
         );
+
+        float zero = 0;
 
         // publication methods
         void publish_thrust_setpoint(const float thrust_x,
@@ -275,5 +304,5 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
 
 
 
-        void configure_axis(AxisPID_s &axis, PIDMode_e mode, float* current, float* setpoint, bool reset_on_change);
+        void configure_axis(AxisPID_s &axis, PIDMode_e mode, bool reset_on_change = true, float* feedback = NULL, float* setpoint = NULL);
     };

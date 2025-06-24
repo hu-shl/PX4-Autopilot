@@ -180,50 +180,47 @@ _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
 
 		drone_task_s drone_task{};
 
-		if(stateEnable == 1)
-		{
-			bitReg =
-    			((normalized[5] > 0.0f) ? 1 : 0) |
-    			((normalized[6] > 0.0f) ? 1 : 0) << 1 |
-    			((normalized[7] > 0.0f) ? 1 : 0) << 2;
-			switch(bitReg)
-			{
-				case 0b000:	// For mission planning in QGround Control
-					drone_task.task = TASK_MISSIONPLANNING;
-				break;
-				case 0b001:	// For RL AI Model		UNUSED
-					drone_task.task = TASK_REINFORCED;
-				break;
-				case 0b010:	// Vision AI Model
-					drone_task.task = TASK_AUTONOMOUS;
-				break;
-				case 0b011:	// For tele operated arm control
-					drone_task.task = TASK_TELEARM;
-				break;
+                if (stateEnable == 1)
+                {
+                        bitReg = ((normalized[5] > 0.0f) ? 1 : 0) |
+                                 ((normalized[6] > 0.0f) ? 1 : 0) << 1 |
+                                 ((normalized[7] > 0.0f) ? 1 : 0) << 2;
+                        switch (bitReg)
+                        {
+                        case 0b000:
+                                drone_task.task = TASK_REMOTECONTROLLED;
+                                break;
+                        case 0b001:
+                                drone_task.task = TASK_BUOYANCYCTRL;
+                                break;
+                        case 0b010:
+                                drone_task.task = TASK_DPGOAL;
+                                break;
+                        case 0b011:
+                                drone_task.task = TASK_DPTELEARM;
+                                break;
+                        case 0b100:
+                                drone_task.task = TASK_SEARCHBUOY;
+                                break;
+                        case 0b101:
+                                drone_task.task = TASK_SEARCHTUBE;
+                                break;
+                        case 0b110:
+                                drone_task.task = TASK_TASK2;
+                                break;
+                        case 0b111:
+                                drone_task.task = TASK_TASK1;
+                                break;
+                        default:
 
-				// add task 4 here later on			UNUSED
+                                break;
+                        }
 
-				case 0b101:	// For remote position control	UNUSED
-					drone_task.task = TASK_REMOTE_POSITION;
-				break;
-				case 0b110:	// For remote processed control	UNUSED
-					drone_task.task = TASK_REMOTE_PROCESSED;
-				break;
-				case 0b111:	// For remote controlled
-					drone_task.task = TASK_REMOTE_CONTROLLED;
-				break;
-				default:
-
-				break;
-			}
-
-			drone_task.timestamp = hrt_absolute_time();
+                        drone_task.timestamp = hrt_absolute_time();
 
 			_drone_task_pub.publish(drone_task);
-
-		}
-
-	}
+                }
+        }
  }
 
 
@@ -234,7 +231,7 @@ _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
 
 		if (update1)
 		{
-			if(bitReg == TASK_REMOTE_CONTROLLED)
+			if(bitReg == TASK_REMOTECONTROLLED)
 			{
 				input_rc_s rc_data {};
 				_input_rc_sub.copy(&rc_data);
