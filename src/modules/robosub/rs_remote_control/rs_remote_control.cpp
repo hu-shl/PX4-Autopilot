@@ -304,7 +304,7 @@ void RobosubRemoteControl::remote_buoyancy(){
 			// 	_buoyancy_ctrl.states[3] = FILL;
 			// else if(normalized[3] <= THRESHOLD)
 			// 	_buoyancy_ctrl.states[3] = EMPTY;
-			_buoyancy_ctrl.states[3] = KEEP;
+			_buoyancy_ctrl_states[3] = KEEP;
 
 			_buoyancy_ctrl.timestamp = hrt_absolute_time();
 			_buoyancy_ctrl_pub.publish(_buoyancy_ctrl);
