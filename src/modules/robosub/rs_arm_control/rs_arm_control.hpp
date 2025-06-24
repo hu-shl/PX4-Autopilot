@@ -37,6 +37,7 @@
  #include <px4_platform_common/module_params.h>
  #include <uORB/SubscriptionInterval.hpp>
  #include <uORB/topics/parameter_update.h>
+ #include <uORB/topics/input_rc.h>
 
  using namespace time_literals;
 
@@ -75,6 +76,12 @@
 	  * @param parameter_update_sub uorb subscription to parameter_update
 	  * @param force for a parameter update
 	  */
+
+	 uint16_t angles[6] = {90, 90, 90, 90, 90, 90};
+
+	 void teleoperated_arm();
+	 uint16_t servo_angle(int8_t direction, uint16_t angle);
+
 	 void parameters_update(bool force = false);
 
 
@@ -85,5 +92,7 @@
 
 	 // Subscriptions
 	 uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+	 uORB::SubscriptionCallbackWorkItem 	_input_rc_sub{this, ORB_ID(input_rc)};
+	 _input_rc_s _input_rc{};
 
  };

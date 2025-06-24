@@ -175,6 +175,33 @@
 	 orb_unsubscribe(sensor_combined_sub);
  }
 
+ void RobosubArmControl::teleoperated_arm() {
+
+	if (_input_rc_sub.update(&_input_rc)) {
+                _input_rc_sub.copy(&_rc_data);
+		// Normalize the rc data to a value between -1 and 1
+                normalized[0] = (_rc_data.values[1] - 1500) / 400.0f;
+                normalized[1] = (_rc_data.values[2] - 1500) / 400.0f;
+                normalized[2] = (_rc_data.values[3] - 1500) / 400.0f;
+                normalized[3] = (_rc_data.values[0] - 1500) / 400.0f;
+
+                normalized[0] = math::constrain(normalized[0],  -1.0f, 1.0f);
+		normalized[1] = math::constrain(normalized[1],  -1.0f, 1.0f);
+		normalized[2] = math::constrain(normalized[2],  -1.0f, 1.0f);
+		normalized[3] = math::constrain(normalized[3],  -1.0f, 1.0f);
+
+		if (normalized[0] )
+	}
+
+ }
+
+ uint16_t RobosubArmControl::servo_angle(int8_t direction, uint16_t angle)
+ {
+	uint16_t newAngle = (angle + 1 * direction)
+
+	return newAngle;
+ }
+
  void RobosubArmControl::parameters_update(bool force)
  {
 	 // check for parameter updates
