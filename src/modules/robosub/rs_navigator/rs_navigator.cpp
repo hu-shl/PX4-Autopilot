@@ -99,7 +99,7 @@ void RobosubNavigator::add_task(const NavTask &task) {
 	}
 }
 
-void RobosubNavigator::process_task(const matrix::Vector3f &current_pos) {
+void RobosubNavigator::process_task(const matrix::Vector3f &current_pos, const float &current_heading) {
     if (_task_head == _task_tail) {
         // No tasks
         return;
@@ -125,24 +125,25 @@ void RobosubNavigator::process_task(const matrix::Vector3f &current_pos) {
             _task_active = false;
         }
         break;
+
+    case NavTaskType::ROTATE:
+        send_heading_setpoint(task.heading);
+	if (heading_to(current_heading, task.heading) < 0.1f) {
+	    _task_head = (_task_head + 1) % MAX_TASKS;
+	    _task_active = false;
+	}
+	break;
     }
 }
 
-void RobosubNavigator::movement_test() {
-	vehicle_local_position_s local_pos{};
-	if (_vehicle_local_position_sub.update(&local_pos)) {
-		matrix::Vector3f current_pos(local_pos.x, local_pos.y, local_pos.z);
-
-		if (_task_head == _task_tail) {
-			add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(2.f, 0.f, 0.f), 0});
-			add_task({NavTaskType::WAIT, {}, 1.0f});
-			add_task({NavTaskType::MOVE_XYZ, current_pos, 0});
-			add_task({NavTaskType::WAIT, {}, 1.0f});
-			add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(-2.f, 0.f, 0.f), 0});
-			add_task({NavTaskType::WAIT, {}, 1.0f});
-		}
-
-		process_task(current_pos);
+void RobosubNavigator::movement_test(const matrix::Vector3f &current_pos) {
+	if (_task_head == _task_tail) {
+		add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(2.f, 0.f, 0.f), 0});
+		add_task({NavTaskType::WAIT, {}, 1.0f});
+		add_task({NavTaskType::MOVE_XYZ, current_pos, 0});
+		add_task({NavTaskType::WAIT, {}, 1.0f});
+		add_task({NavTaskType::MOVE_XYZ, current_pos + matrix::Vector3f(-2.f, 0.f, 0.f), 0});
+		add_task({NavTaskType::WAIT, {}, 1.0f});
 	}
 }
 
@@ -156,8 +157,48 @@ void RobosubNavigator::send_position_setpoint(const matrix::Vector3f &pos) {
 	trajectory_setpoint_pub.publish(setpoint);
 }
 
-void RobosubNavigator::search_grid() {
+void RobosubNavigator::send_heading_setpoint(const float &heading) {
+	trajectory_setpoint_s setpoint{};
+	setpoint.timestamp = hrt_absolute_time();
+	setpoint.yaw = heading;
 
+	trajectory_setpoint_pub.publish(setpoint);
+}
+
+void RobosubNavigator::search_grid(const matrix::Vector3f &current_pos, const float &current_heading) {
+    // Only add new tasks if the queue is empty and we haven't finished
+    if (_task_head == _task_tail && (grid_line * SEARCH_GRID_SPACING < SEARCH_GRID_WIDTH)) {
+        matrix::Vector3f start = current_pos;
+        float heading = current_heading;
+
+        // Determine direction for this line
+        float direction = grid_forward ? 1.0f : -1.0f;
+
+        // Move along the grid line
+        add_task({NavTaskType::MOVE_XYZ, start + matrix::Vector3f(direction * SEARCH_GRID_LENGTH, 0.f, 0.f), 0, 0});
+        add_task({NavTaskType::WAIT, {}, 1.0f, 0});
+
+        // If not the last line, rotate and move to next line
+        if ((grid_line + 1) * SEARCH_GRID_SPACING < SEARCH_GRID_WIDTH) {
+            // Rotate 90 deg
+            float next_heading = calculate_next_heading(heading, heading + direction * float(M_PI_2));
+            add_task({NavTaskType::ROTATE, {}, 0, next_heading});
+            add_task({NavTaskType::WAIT, {}, 1.0f, 0});
+
+            // Move sideways to next line
+            add_task({NavTaskType::MOVE_XYZ, start + matrix::Vector3f(direction * SEARCH_GRID_LENGTH, (grid_line + 1) * SEARCH_GRID_SPACING, 0.f), 0, 0});
+            add_task({NavTaskType::WAIT, {}, 1.0f, 0});
+
+            // Rotate back to original heading (opposite direction)
+            float return_heading = calculate_next_heading(next_heading, heading + float(M_PI));
+            add_task({NavTaskType::ROTATE, {}, 0, return_heading});
+            add_task({NavTaskType::WAIT, {}, 1.0f, 0});
+        }
+
+        // Prepare for next line
+        grid_line++;
+        grid_forward = !grid_forward;
+    }
 }
 
 void RobosubNavigator::Run()
@@ -169,9 +210,15 @@ void RobosubNavigator::Run()
 	if (_drone_task_sub.updated()) {
 		_drone_task_sub.copy(&_drone_task);
 	}
-	// if (_drone_task.task == drone_task_s::TASK_AUTONOMOUS) {
-	// 	movement_test();
-	// }
+	if (_drone_task.task == drone_task_s::TASK_AUTONOMOUS) {
+		if (_vehicle_local_position_sub.update(&local_pos)) {
+			matrix::Vector3f current_pos(local_pos.x, local_pos.y, local_pos.z);
+			float current_heading = local_pos.heading;
+			movement_test(current_pos);
+
+			process_task(current_pos, current_heading);
+		}
+	}
 }
 
 void RobosubNavigator::parameters_update(bool force)
