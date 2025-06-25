@@ -97,7 +97,7 @@ void RobosubArmControl::teleoperated_arm() {
 				states[BASE] = EXTEND;
 		} else if (normalized[2] > THRESHOLD) {
 			states[GRIP] = EXTEND;
-		} else {
+		} else { 
 			states[BASE] = HOLD;
 			states[GRIP] = HOLD;
 		}
