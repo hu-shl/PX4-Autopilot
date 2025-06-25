@@ -44,6 +44,7 @@
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+#include <uORB/topics/status.h>
 
 #define SEARCH_GRID_LENGTH 20
 #define SEARCH_GRID_WIDTH 17.5
@@ -110,8 +111,11 @@
 	uORB::Publication<trajectory_setpoint_s> trajectory_setpoint_pub{ORB_ID(trajectory_setpoint)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
 	uORB::Subscription _drone_task_sub{ORB_ID(drone_task)};
+	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
+
 	drone_task_s _drone_task{};
 	vehicle_local_position_s local_pos{};
+	status_s status_msg{};
 	int grid_line = 0;
 	bool grid_forward = true;
 
@@ -131,6 +135,7 @@
 		}
 		return float(current_heading + diff) ;
 	}
+	void send_emergency_stop(bool up = false);
 
 	 // Subscriptions
 	 uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
