@@ -37,12 +37,11 @@
  * setpoints and applies the PID control to the motors. PID output is published
  * as a thrust- and torque setpoint, used by the thruster control module.
  *
- * @author Daan Smienk <daansmienk10@gmail.com>
+ * @author Daan Smienk <daan@daansmienk.nl>
  * @author Thijs Vader <thijs.vader@student.hu.nl>
  */
 
 #include "rs_pos_control.hpp"
-#include "../rs_motor_control/rs_motor_control.hpp"
 #include "px4_platform_common/defines.h"
 #include "px4_platform_common/log.h"
 
@@ -61,7 +60,6 @@ RobosubPosControl::RobosubPosControl()
 {
 }
 
-RobosubPosControl::~RobosubPosControl() { perf_free(_loop_perf); }
 RobosubPosControl::~RobosubPosControl() { perf_free(_loop_perf); }
 
 bool RobosubPosControl::init()
@@ -236,6 +234,8 @@ void RobosubPosControl::Run()
         matrix::Quatf current_attitude_quat(_vehicle_attitude.q);
         matrix::Eulerf current_attitude(current_attitude_quat.dcm_z());
 
+
+
         switch (_drone_task.task)
         {
         case _drone_task.TASK_REMOTECONTROLLED: // RAW Remote Control
@@ -297,7 +297,6 @@ void RobosubPosControl::Run()
             1000000 / _pid_frequency.get()); // Schedule next run at the desired frequency
 
         perf_end(_loop_perf);
-        perf_end(_loop_perf);
 }
 
 /**
@@ -333,11 +332,8 @@ int RobosubPosControl::task_spawn(int argc, char *argv[])
         delete instance;
         _object.store(nullptr);
         _task_id = -1;
-        delete instance;
-        _object.store(nullptr);
-        _task_id = -1;
 
-        return PX4_ERROR;
+
         return PX4_ERROR;
 }
 
@@ -369,7 +365,6 @@ int RobosubPosControl::print_usage(const char *reason)
         PRINT_MODULE_DESCRIPTION(
             R"DESCR_STR(
         PRINT_MODULE_DESCRIPTION(
-            R"DESCR_STR(
 ### Description
 PID controller to control Thrusters and Buoayncy System.
 Has no commands for now.
@@ -378,11 +373,7 @@ Has no commands for now.
         PRINT_MODULE_USAGE_NAME("_robosub_pos_control", "controller");
         PRINT_MODULE_USAGE_COMMAND("start")
         PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
-        PRINT_MODULE_USAGE_NAME("_robosub_pos_control", "controller");
-        PRINT_MODULE_USAGE_COMMAND("start")
-        PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 
-        return 0;
         return 0;
 }
 

@@ -197,12 +197,8 @@ void RobosubRemoteControl::taskStat() {
 
                                 break;
                         }
-                                break;
-                        }
 
                         drone_task.timestamp = hrt_absolute_time();
-                        drone_task.timestamp = hrt_absolute_time();
-
 			_drone_task_pub.publish(drone_task);
                 }
         }

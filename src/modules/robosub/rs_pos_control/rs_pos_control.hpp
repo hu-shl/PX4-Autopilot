@@ -141,18 +141,12 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
 
         /** @see ModuleBase */
         static int task_spawn(int argc, char *argv[]);
-        /** @see ModuleBase */
-        static int task_spawn(int argc, char *argv[]);
 
-        static int custom_command(int argc, char *argv[]);
         static int custom_command(int argc, char *argv[]);
 
         /** @see ModuleBase */
         static int print_usage(const char *reason = nullptr);
-        /** @see ModuleBase */
-        static int print_usage(const char *reason = nullptr);
 
-        bool init();
         bool init();
 
         void Run() override;
@@ -191,7 +185,6 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
         uORB::Publication<vehicle_torque_setpoint_s> _torque_setpoint_pub{
             ORB_ID(vehicle_torque_setpoint)}; // vehicle torque setpoint
 
-        perf_counter_t _loop_perf;
         perf_counter_t _loop_perf;
 
         trajectory_setpoint_s
