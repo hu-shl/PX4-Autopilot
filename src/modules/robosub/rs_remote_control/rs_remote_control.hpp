@@ -155,6 +155,8 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         input_rc_s _input_rc{};
 	vehicle_command_s _vehicle_command_arm{};
 
+	status_s _status_msg{};
+	vehicle_command_s _vehicle_command_arm{};
 
         float normalized[8];
         float range = 1.0f;

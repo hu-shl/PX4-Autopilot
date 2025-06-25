@@ -127,7 +127,7 @@ void RobosubRemoteControl::Run() {
                 receiver();
         } else {
 		status_safe = false;
-		if (_status_msg.warning == status_s::STATUS_HIGH_VALUE_DETECTED) {
+		if (_status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) {
 			RobosubMotorControl robosub_motor_control;
 			robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
 			robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
@@ -136,9 +136,9 @@ void RobosubRemoteControl::Run() {
 			robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
 			robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
 			robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
-		} else if (_status_msg.warning == status_s::STATUS_LOW_BATTERY) {
+		} else if (_status_msg.status == status_s::STATUS_LOW_BATTERY) {
 			PX4_ERR("Low battery detected");
-		} else if (_status_msg.warning == status_s::STATUS_CRITICAL_BATTERY) {
+		} else if (_status_msg.status == status_s::STATUS_CRITICAL_BATTERY) {
 			PX4_ERR("Critical battery level");
 		}
         }
