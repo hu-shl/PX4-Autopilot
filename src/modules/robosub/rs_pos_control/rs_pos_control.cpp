@@ -259,7 +259,7 @@ void RobosubPosControl::Run()
                 configure_axis(Z_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.z, &_trajectory_setpoint.position[2]);
                 configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero);
                 configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
-                configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(), &zero);
+                configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(), &_trajectory_setpoint.yaw);
                 break;
 
         case _drone_task.TASK_DPTELEARM: // Remote Controlled arm
