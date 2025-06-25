@@ -45,6 +45,7 @@
 #include <uORB/topics/input_rc.h>
 #include <uORB/topics/water_detection.h>
 #include <uORB/topics/drone_task.h>
+#include <uORB/topics/status.h>
 
 using namespace time_literals;
 
@@ -127,11 +128,13 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         // Subscriptions
         uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
         uORB::SubscriptionCallbackWorkItem _input_rc_sub{this, ORB_ID(input_rc)};
+	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
 
         uORB::Publication<drone_task_s> _drone_task_pub{ORB_ID(drone_task)};
 
         drone_task_s _drone_task{};
         input_rc_s _input_rc{};
+	status_s status_msg{};
 
         float normalized[8];
         float range = 1.0f;

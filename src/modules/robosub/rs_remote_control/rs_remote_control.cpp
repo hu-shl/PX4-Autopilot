@@ -121,7 +121,7 @@ RobosubRemoteControl::~RobosubRemoteControl() {
 void RobosubRemoteControl::Run() {
         perf_begin(_loop_perf);
 
-        // if (!force_overide) {
+        // if (!_status_sub.update(&_status_msg)) {
         if (1) {
                 taskStat();
 
