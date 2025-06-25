@@ -62,6 +62,7 @@ RobosubPosControl::RobosubPosControl()
 }
 
 RobosubPosControl::~RobosubPosControl() { perf_free(_loop_perf); }
+RobosubPosControl::~RobosubPosControl() { perf_free(_loop_perf); }
 
 bool RobosubPosControl::init()
 {
@@ -296,6 +297,7 @@ void RobosubPosControl::Run()
             1000000 / _pid_frequency.get()); // Schedule next run at the desired frequency
 
         perf_end(_loop_perf);
+        perf_end(_loop_perf);
 }
 
 /**
@@ -331,7 +333,11 @@ int RobosubPosControl::task_spawn(int argc, char *argv[])
         delete instance;
         _object.store(nullptr);
         _task_id = -1;
+        delete instance;
+        _object.store(nullptr);
+        _task_id = -1;
 
+        return PX4_ERROR;
         return PX4_ERROR;
 }
 
@@ -362,6 +368,8 @@ int RobosubPosControl::print_usage(const char *reason)
 
         PRINT_MODULE_DESCRIPTION(
             R"DESCR_STR(
+        PRINT_MODULE_DESCRIPTION(
+            R"DESCR_STR(
 ### Description
 PID controller to control Thrusters and Buoayncy System.
 Has no commands for now.
@@ -370,7 +378,11 @@ Has no commands for now.
         PRINT_MODULE_USAGE_NAME("_robosub_pos_control", "controller");
         PRINT_MODULE_USAGE_COMMAND("start")
         PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
+        PRINT_MODULE_USAGE_NAME("_robosub_pos_control", "controller");
+        PRINT_MODULE_USAGE_COMMAND("start")
+        PRINT_MODULE_USAGE_DEFAULT_COMMANDS();
 
+        return 0;
         return 0;
 }
 

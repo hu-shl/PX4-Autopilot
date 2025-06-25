@@ -268,7 +268,9 @@ set(msg_files
 	robosub/waterDetection.msg
 	robosub/waterContactState.msg
 	robosub/InternalSensors.msg
-	robosub/VehiclePositionAttitudeSetpoint.msg
+	robosub/OpiDetection.msg
+	robosub/ControlLamp.msg
+	robosub/Status.msg
 )
 list(SORT msg_files)
 
