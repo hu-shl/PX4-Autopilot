@@ -131,6 +131,7 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         void taskStat();
 
 	void remote_buoyancy();
+	bool status_safe = true;
 
         void parameters_update(bool force = false);
 
