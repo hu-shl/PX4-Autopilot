@@ -1,0 +1,12 @@
+menuconfig MODULES_ROBOSUB_RS_STATUS_MONITOR
+	bool "robosub_status_monitor"
+	default n
+	---help---
+		Enable support for robosub_status_monitor
+
+menuconfig USER_ROBOSUB_RS_STATUS_MONITOR
+	bool "robosub_status_monitor running as userspace module"
+	default y
+	depends on BOARD_PROTECTED && MODULES_ROBOSUB_RS_STATUS_MONITOR
+	---help---
+		Put robosub_status_monitor in userspace memory

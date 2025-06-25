@@ -272,6 +272,7 @@ set(msg_files
 	robosub/ControlLamp.msg
 	robosub/BuoyancyCtrl.msg
 	robosub/ArmCtrl.msg
+	robosub/Status.msg
 )
 list(SORT msg_files)
 

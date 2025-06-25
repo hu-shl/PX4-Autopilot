@@ -31,9 +31,8 @@
  *
  ****************************************************************************/
 
-#include "rs_remote_control.hpp"
+#include "rs_status_monitor.hpp"
 
-#include "../rs_motor_control/rs_motor_control.hpp"
 
 #include <px4_platform_common/getopt.h>
 #include <px4_platform_common/log.h>
@@ -50,16 +49,16 @@
 #define SENSOR_TEMPERATURE 1
 #define SENSOR_PRESSURE 2
 
-extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
+extern "C" __EXPORT int rs_status_monitor_main(int argc, char *argv[]);
 
-int RobosubRemoteControl::print_status() {
+int RobosubStatusMonitor::print_status() {
         PX4_INFO("Running");
         // TODO: print additional runtime information about the state of the module
 
         return 0;
 }
 
-int RobosubRemoteControl::custom_command(int argc, char *argv[]) {
+int RobosubStatusMonitor::custom_command(int argc, char *argv[]) {
         /*
         if (!is_running()) {
                 print_usage("not running");
@@ -76,8 +75,8 @@ int RobosubRemoteControl::custom_command(int argc, char *argv[]) {
         return print_usage("unknown command");
 }
 
-int RobosubRemoteControl::task_spawn(int argc, char *argv[]) {
-        RobosubRemoteControl *instance = new RobosubRemoteControl();
+int RobosubStatusMonitor::task_spawn(int argc, char *argv[]) {
+        RobosubStatusMonitor *instance = new RobosubStatusMonitor();
 
         if (instance) {
                 _object.store(instance);
@@ -98,7 +97,7 @@ int RobosubRemoteControl::task_spawn(int argc, char *argv[]) {
         return PX4_ERROR;
 }
 
-bool RobosubRemoteControl::init() {
+bool RobosubStatusMonitor::init() {
         // Execute the Run() function everytime an input_rc is publiced
         // if (!.registerCallback()) {
         // 	PX4_ERR("callback registration failed");
@@ -106,210 +105,30 @@ bool RobosubRemoteControl::init() {
         // }
 
         ScheduleOnInterval(100_ms);
-        PX4_DEBUG("RobosubRemoteControl::init()");
+        PX4_DEBUG("RobosubStatusMonitor::init()");
         return true;
 }
 
-RobosubRemoteControl::RobosubRemoteControl()
+RobosubStatusMonitor::RobosubStatusMonitor()
     : ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
       _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": cycle")) {}
 
-RobosubRemoteControl::~RobosubRemoteControl() {
+RobosubStatusMonitor::~RobosubStatusMonitor() {
         // clean up if necessary
 }
 
-void RobosubRemoteControl::Run() {
+void RobosubStatusMonitor::Run() {
         perf_begin(_loop_perf);
 
-        // if (!force_overide) {
-        if (1) {
-                taskStat();
-
-                receiver();
-        } else {
-                PX4_WARN("Force override active, motors will be forced to go up");
-                RobosubMotorControl robosub_motor_control;
-                robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
-        }
+        check_internal_state(); // Check if the internal state of the module is correct and if something is wrong force
+                                // the motors to go up.
+	check_battery_status();
 
         // Schedule();
         perf_end(_loop_perf);
 }
 
-void RobosubRemoteControl::taskStat() {
-        update1 = 0;
-        if (_input_rc_sub.update(&_input_rc)) {
-                update1 = 1;
-                input_rc_s rc_data{};
-                _input_rc_sub.copy(&rc_data);
-                normalized[4] = (rc_data.values[4] - 1500) / 400.0f;
-                normalized[5] = (rc_data.values[5] - 1500) / 400.0f;
-                normalized[6] = (rc_data.values[6] - 1500) / 400.0f;
-                normalized[7] = (rc_data.values[7] - 1500) / 400.0f;
-
-                normalized[4] = math::constrain(normalized[4], -1.0f, 1.0f);
-                normalized[5] = math::constrain(normalized[5], -1.0f, 1.0f);
-                normalized[6] = math::constrain(normalized[6], -1.0f, 1.0f);
-                normalized[7] = math::constrain(normalized[7], -1.0f, 1.0f);
-
-                uint8_t stateEnable((normalized[4] > 0.0f) ? 1 : 0);
-
-                if (stateEnable == 1) {
-                        bitReg = ((normalized[5] > 0.0f) ? 1 : 0) | ((normalized[6] > 0.0f) ? 1 : 0) << 1 |
-                                 ((normalized[7] > 0.0f) ? 1 : 0) << 2;
-                        switch (bitReg) {
-                        case 0b000:
-                                _drone_task.task = TASK_REMOTECONTROLLED;
-                                break;
-                        case 0b001:
-                                _drone_task.task = TASK_BUOYANCYCTRL;
-                                break;
-                        case 0b010:
-                                _drone_task.task = TASK_DPGOAL;
-                                break;
-			case 0b011:
-				_drone_task.task = TASK_DPTELEARM;
-				break;
-			case 0b100:
-				_drone_task.task = TASK_SEARCHBUOY;
-				break;
-			case 0b101:
-				_drone_task.task = TASK_SEARCHTUBE;
-				break;
-			case 0b110:
-				_drone_task.task = TASK_TASK2;
-				break;
-                        case 0b111:
-                                _drone_task.task = TASK_TASK1;
-                                break;
-                        default:
-				_drone_task.task = TASK_REMOTECONTROLLED;
-                                break;
-                        }
-
-                        _drone_task.timestamp = hrt_absolute_time();
-
-                        _drone_task_pub.publish(_drone_task);
-                }
-        }
-}
-
-void RobosubRemoteControl::receiver() {
-        RobosubMotorControl robosub_motor_control;
-
-        if (update1) {
-                if (bitReg == TASK_REMOTECONTROLLED) {
-                        input_rc_s rc_data{};
-                        _input_rc_sub.copy(&rc_data);
-
-                        if (_water_detection_sub.update(&_water_detection)) {
-                                sensor_mainbrain = _water_detection.mainbrain_sensor;
-                                sensor_power = _water_detection.power_module_sensor;
-                        }
-
-                        if (!sensor_mainbrain && !sensor_power) {
-                                range = 0.2f;
-
-                        } else if (!sensor_mainbrain && sensor_power) {
-                                range = 0.3f;
-
-                        } else if (sensor_mainbrain && sensor_power) {
-                                range = 1.0f;
-                        }
-                        // range = 1.0f; // Disable safety water detection force range to 100 perc
-
-                        // Normalize the rc data to a value between -1 and 1
-                        normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
-                        normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
-                        normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
-                        normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
-
-                        normalized[0] = math::constrain(normalized[0],  -range, range);
-			normalized[1] = math::constrain(normalized[1],  -range, range);
-			normalized[2] = math::constrain(normalized[2],  -range, range);
-			normalized[3] = math::constrain(normalized[3],  -range, range);
-
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
-
-                        robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[1], 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
-
-                        if (normalized[2] > 0.1f || normalized[2] < -0.1f) {
-                                robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
-                                robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
-                        } else {
-                                if (normalized[3] <= 0)
-				robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
-                                else if (normalized[3] >= 0) {
-                                        robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
-                                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
-                                }
-                        }
-                }
-                update1 = 0;
-        }
-}
-
-void RobosubRemoteControl::remote_buoyancy(){
-	if (update1) {
-                if (bitReg == TASK_BUOYANCYCTRL) {
-                        input_rc_s rc_data{};
-                        _input_rc_sub.copy(&rc_data);
-
-			normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
-                        normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
-                        normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
-                        // normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
-
-			normalized[0] = math::constrain(normalized[0],  -range, range);
-			normalized[1] = math::constrain(normalized[1],  -range, range);
-			normalized[2] = math::constrain(normalized[2],  -range, range);
-			// normalized[3] = math::constrain(normalized[3],  -range, range);
-
-			if(normalized[0] >= -THRESHOLD && normalized[0] <= THRESHOLD)
-				_buoyancy_ctrl.states[0] = KEEP;
-			else if(normalized[0] >= THRESHOLD)
-				_buoyancy_ctrl.states[0] = FILL;
-			else if(normalized[0] <= THRESHOLD)
-				_buoyancy_ctrl.states[0] = EMPTY;
-
-			if(normalized[1] >= -THRESHOLD && normalized[1] <= THRESHOLD)
-				_buoyancy_ctrl.states[1] = KEEP;
-			else if(normalized[1] >= THRESHOLD)
-				_buoyancy_ctrl.states[1] = FILL;
-			else if(normalized[1] <= THRESHOLD)
-				_buoyancy_ctrl.states[1] = EMPTY;
-
-			if(normalized[2] >= -THRESHOLD && normalized[2] <= THRESHOLD)
-				_buoyancy_ctrl.states[2] = KEEP;
-			else if(normalized[2] >= THRESHOLD)
-				_buoyancy_ctrl.states[2] = FILL;
-			else if(normalized[2] <= THRESHOLD)
-				_buoyancy_ctrl.states[2] = EMPTY;
-
-			// if(normalized[3] >= -THRESHOLD && normalized[3] <= THRESHOLD)
-			// 	_buoyancy_ctrl.states[3] = KEEP;
-			// else if(normalized[3] >= THRESHOLD)
-			// 	_buoyancy_ctrl.states[3] = FILL;
-			// else if(normalized[3] <= THRESHOLD)
-			// 	_buoyancy_ctrl.states[3] = EMPTY;
-			_buoyancy_ctrl_states[3] = KEEP;
-
-			_buoyancy_ctrl.timestamp = hrt_absolute_time();
-			_buoyancy_ctrl_pub.publish(_buoyancy_ctrl);
-		}
-	}
-}
-
-void RobosubRemoteControl::check_internal_state() {
+void RobosubStatusMonitor::check_internal_state() {
         // Check if the internal state of the module is correct and if something is wrong force the motors to go up.
         if (_internal_sensors_sub.updated()) {
                 internal_sensors_s internal_sensors{};
@@ -357,7 +176,6 @@ void RobosubRemoteControl::check_internal_state() {
                 }
 
                 // Only calculate absolute humidity if temperature and humidity were updated close in time
-                const uint64_t ABS_HUMIDITY_MAX_DELTA_US = 200000; // 200 ms
                 if (_temperature_filter[module_index].updated && _humidity_filter[module_index].updated) {
                         uint64_t temp_time = _temperature_filter[module_index].last_update;
                         uint64_t hum_time = _humidity_filter[module_index].last_update;
@@ -380,10 +198,14 @@ void RobosubRemoteControl::check_internal_state() {
                         _temperature_filter[module_index].updated = false;
                         _humidity_filter[module_index].updated = false;
                 }
+		if (force_overide) {
+			status_msg.status = status_s::STATUS_HIGH_VALUE_DETECTED;
+			status_pub.publish(status_msg);
+		}
         }
 }
 
-float RobosubRemoteControl::update_running_average(SensorFilter &filter, float new_value) {
+float RobosubStatusMonitor::update_running_average(SensorFilter &filter, float new_value) {
         // Remove old value from sum if buffer is full
         if (filter.count >= FILTER_SIZE) {
                 if (fabsf(filter.initial_average) <= 1e-5f) {
@@ -409,12 +231,26 @@ float RobosubRemoteControl::update_running_average(SensorFilter &filter, float n
 }
 
 // Helper function for absolute humidity calculation
-float RobosubRemoteControl::calculate_absolute_humidity(float rel_humidity, float temperature) {
+float RobosubStatusMonitor::calculate_absolute_humidity(float rel_humidity, float temperature) {
         // Formula: 13.25 * RH * exp(17.67 * T / (T + 243.5)) / (T + 273.15)
         return 13.25f * rel_humidity * expf(17.67f * temperature / (temperature + 243.5f)) / (temperature + 273.15f);
 }
 
-void RobosubRemoteControl::parameters_update(bool force) {
+void RobosubStatusMonitor::check_battery_status() {
+	if (_battery_status_sub.update(&_battery_status)) {
+		if (_battery_status.warning == battery_status_s::WARNING_LOW) {
+			PX4_WARN("Low battery detected: %.2fV", (double)_battery_status.voltage_v);
+			status_msg.status = status_s::STATUS_LOW_BATTERY;
+			status_pub.publish(status_msg);
+		} else if (_battery_status.warning == battery_status_s::WARNING_CRITICAL) {
+			PX4_ERR("Critical battery level: %.2fV", (double)_battery_status.voltage_v);
+			status_msg.status = status_s::STATUS_CRITICAL_BATTERY;
+			status_pub.publish(status_msg);
+		}
+	}
+}
+
+void RobosubStatusMonitor::parameters_update(bool force) {
         // check for parameter updates
         if (_parameter_update_sub.updated() || force) {
                 // clear update
@@ -426,7 +262,7 @@ void RobosubRemoteControl::parameters_update(bool force) {
         }
 }
 
-int RobosubRemoteControl::print_usage(const char *reason) {
+int RobosubStatusMonitor::print_usage(const char *reason) {
         if (reason) {
                 PX4_WARN("%s\n", reason);
         }
@@ -447,7 +283,7 @@ int RobosubRemoteControl::print_usage(const char *reason) {
 
  )DESCR_STR");
 
-        PRINT_MODULE_USAGE_NAME("module", "rs arm control");
+        PRINT_MODULE_USAGE_NAME("module", "rs arm monitor");
         PRINT_MODULE_USAGE_COMMAND("start");
         PRINT_MODULE_USAGE_PARAM_FLAG('f', "Optional example flag", true);
         PRINT_MODULE_USAGE_PARAM_INT('p', 0, 0, 1000, "Optional example parameter", true);
@@ -456,4 +292,4 @@ int RobosubRemoteControl::print_usage(const char *reason) {
         return 0;
 }
 
-int rs_remote_control_main(int argc, char *argv[]) { return RobosubRemoteControl::main(argc, argv); }
+int rs_status_monitor_main(int argc, char *argv[]) { return RobosubStatusMonitor::main(argc, argv); }
