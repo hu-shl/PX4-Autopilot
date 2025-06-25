@@ -34,13 +34,18 @@
 #include "rs_canfd_receiver.hpp"
 #include "../rs_canfd_common/rs_canfd_common.hpp"
 
+#include <sys/ioctl.h>
+
+// PX4 INCLUDES
 #include <px4_platform_common/getopt.h>
 #include <px4_platform_common/log.h>
 #include <drivers/drv_hrt.h>
-#include <uORB/topics/parameter_update.h>
-#include <sys/ioctl.h>
-#include <uORB/topics/water_detection.h>
+
+// PX4 TOPICS
+#include <uORB/topics/distance_sensor.h>
 #include <uORB/topics/internal_sensors.h>
+#include <uORB/topics/parameter_update.h>
+#include <uORB/topics/water_detection.h>
 
 int RoboSubCANFDReceiver::print_status() {
         PX4_INFO("Running");
@@ -98,12 +103,20 @@ bool RoboSubCANFDReceiver::init() {
                 PX4_ERR("callback registration failed");
                 return false;
         }
+
+	// Configure PX4 RangeFinder_bow ultrasonic sensor
+	_px4_rangefinder_bow.set_min_distance(0.2f); // Set minimum measurable distance to 20 cm
+	_px4_rangefinder_bow.set_max_distance(2.0f);
+	_px4_rangefinder_bow.set_hfov(math::radians(8.f));
+
         PX4_DEBUG("RoboSubCANFDReceiver::init()");
         return true;
 }
 
 RoboSubCANFDReceiver::RoboSubCANFDReceiver()
-    : ModuleParams(nullptr), WorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers)
+    : ModuleParams(nullptr), WorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
+	_px4_rangefinder_bow(0, distance_sensor_s::ROTATION_FORWARD_FACING)
+
 /* performance counters */
 // _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME": cycle"))
 {
@@ -174,6 +187,14 @@ void RoboSubCANFDReceiver::Run() {
                                     _raw_canfd_msg.data[0]; // set the water detected bit, this should be the first byte
                         }
                         water_detection_pub.publish(water_detection_msg); // publish the data
+                        break;
+                }
+		case 0x06: { // Ultrasonic distance sensor (bow-side)
+			if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
+				uint8_t distance_mm = _raw_canfd_msg.data[0]; // Corrected type
+				float distance_m = distance_mm / 1000.f;
+                                _px4_rangefinder_bow.update(hrt_absolute_time(), distance_m); // update range finder
+                        }
                         break;
                 }
                 case 0x0A: { // ClientID Thruster ESC telemetery

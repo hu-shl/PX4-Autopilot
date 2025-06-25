@@ -42,6 +42,7 @@
 #include <sys/socket.h>
 #include <nuttx/can.h>
 #include <sys/time.h>
+#include <lib/drivers/rangefinder/PX4Rangefinder.hpp>
 
 #include <uORB/uORB.h>
 #include <uORB/Publication.hpp>
@@ -122,6 +123,8 @@ class RoboSubCANFDReceiver : public ModuleBase<RoboSubCANFDReceiver>, public Mod
          */
         void send_0x01();
         void send_0x02();
+
+        PX4Rangefinder	_px4_rangefinder_bow;
 
         DEFINE_PARAMETERS((ParamInt<px4::params::SYS_AUTOSTART>)_param_sys_autostart,  /**< example parameter */
                           (ParamInt<px4::params::SYS_AUTOCONFIG>)_param_sys_autoconfig /**< another parameter */
