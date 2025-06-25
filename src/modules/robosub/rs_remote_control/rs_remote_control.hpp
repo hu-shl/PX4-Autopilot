@@ -47,6 +47,7 @@
 #include <uORB/topics/drone_task.h>
 #include <uORB/topics/internal_sensors.h>
 #include <uORB/topics/buoyancy_ctrl.h>
+#include <uORB/topics/status.h>
 
 using namespace time_literals;
 
@@ -140,16 +141,16 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 			)
 
         // Subscriptions
-        uORB::SubscriptionInterval 		_parameter_update_sub{ORB_ID(parameter_update), 1_s};
-        uORB::SubscriptionCallbackWorkItem 	_input_rc_sub{this, ORB_ID(input_rc)};
-        uORB::SubscriptionCallbackWorkItem 	_internal_sensors_sub{this, ORB_ID(internal_sensors)};
+        uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+        uORB::SubscriptionCallbackWorkItem _input_rc_sub{this, ORB_ID(input_rc)};
+	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
 
         uORB::Publication<drone_task_s> 	_drone_task_pub{ORB_ID(drone_task)};
 	uORB::Publication<buoyancy_ctrl_s> 	_buoyancy_ctrl_pub{ORB_ID(buoyancy_ctrl)};
 
-        drone_task_s 	_drone_task{};
-	buoyancy_ctrl_s _buoyancy_ctrl{};
-        input_rc_s 	_input_rc{};
+        drone_task_s _drone_task{};
+        input_rc_s _input_rc{};
+	status_s status_msg{};
 
         float normalized[8];
         float range = 1.0f;
