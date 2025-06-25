@@ -121,21 +121,36 @@ RobosubRemoteControl::~RobosubRemoteControl() {
 void RobosubRemoteControl::Run() {
         perf_begin(_loop_perf);
 
-        // if (!_status_sub.update(&_status_msg)) {
-        if (1) {
+        if (!_status_sub.update(&_status_msg) && status_safe) {
                 taskStat();
 
                 receiver();
-        } else {
-                PX4_WARN("Force override active, motors will be forced to go up");
-                RobosubMotorControl robosub_motor_control;
-                robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
+        } else { // I don't agree with handling the emergency in here. I think it should be handled in the position controller.
+		status_safe = false;
+		if (_status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) {
+			if (status_emergency_start == 0) {
+				status_emergency_start = hrt_absolute_time();
+			}
+			RobosubMotorControl robosub_motor_control;
+			if (hrt_elapsed_time(&status_emergency_start) > 5_s) {
+				robosub_motor_control.actuator_test(MOTOR_UP1, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP2, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP3, 0.0f, 0, false);
+			}
+			else {
+				robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
+			}
+		} else if (_status_msg.status == status_s::STATUS_LOW_BATTERY) {
+			PX4_ERR("Low battery detected");
+		} else if (_status_msg.status == status_s::STATUS_CRITICAL_BATTERY) {
+			PX4_ERR("Critical battery level");
+		}
         }
 
         // Schedule();
@@ -199,7 +214,15 @@ void RobosubRemoteControl::taskStat() {
                         }
 
                         drone_task.timestamp = hrt_absolute_time();
-			_drone_task_pub.publish(drone_task);
+			_vehicle_command_arm.timestamp = hrt_absolute_time();
+			_vehicle_command_arm.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
+			_vehicle_command_arm.param1 = vehicle_command_s::ARMING_ACTION_ARM;
+			_vehicle_command_arm.param2 = 21196; // Some magic number to force the arm command
+
+                        _drone_task_pub.publish(drone_task);
+			_vehicle_command_pub.publish(_vehicle_command_arm);
+
+
                 }
         }
  }

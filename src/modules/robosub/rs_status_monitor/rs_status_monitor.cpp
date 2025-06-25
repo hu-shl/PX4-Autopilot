@@ -44,11 +44,6 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 
-// PX4 defines for InternalSensors.msg
-#define SENSOR_HUMIDITY 0
-#define SENSOR_TEMPERATURE 1
-#define SENSOR_PRESSURE 2
-
 extern "C" __EXPORT int rs_status_monitor_main(int argc, char *argv[]);
 
 int RobosubStatusMonitor::print_status() {
@@ -144,19 +139,19 @@ void RobosubStatusMonitor::check_internal_state() {
                 const char *warn_msg = nullptr;
 
                 switch (internal_sensors.sensor) {
-                case SENSOR_HUMIDITY:
+                case internal_sensors_s::SENSOR_HUMIDITY:
                         filtered_value = &_filtered_humidity[module_index];
                         filter = &_humidity_filter[module_index];
                         param_offset = _param_offset_rel_humidity.get();
                         warn_msg = "High humidity detected: %.2f%%";
                         break;
-                case SENSOR_TEMPERATURE:
+                case internal_sensors_s::SENSOR_TEMPERATURE:
                         filtered_value = &_filtered_temperature[module_index];
                         filter = &_temperature_filter[module_index];
                         param_offset = _param_offset_temperature.get();
                         warn_msg = "High temperature detected: %.2f°C";
                         break;
-                case SENSOR_PRESSURE:
+                case internal_sensors_s::SENSOR_PRESSURE:
                         filtered_value = &_filtered_pressure[module_index];
                         filter = &_pressure_filter[module_index];
                         param_offset = _param_offset_pressure.get();
