@@ -221,6 +221,103 @@ void RobosubNavigator::search_grid(const matrix::Vector3f &current_pos, const fl
     }
 }
 
+void RobosubNavigator::buoy_task_execution(void)
+{
+	if( _opi_detection_sub.updated()) {
+		_opi_detection_sub.copy(&_opi_detection);
+
+		if (_opi_detection.color == orange)
+		{
+			opi_task = TASK_UPDOWN;
+		}
+		else if (_opi_detection.color == white)
+		{
+			opi_task = TASK_DOWNUP;
+		}
+		else if (_opi_detection.color == red)
+		{
+			opi_task = TASK_CLKCIRCLE;
+		}
+		else if (_opi_detection.color == black)
+		{
+			opi_task = TASK_CNTRCIRCLE;
+		}
+		else if (_opi_detection.color == yellow)
+		{
+			opi_task = TASK_GATE;
+		}
+
+		switch(opi_task) {
+			case TASK_UPDOWN:
+				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, 0.5f), 0});
+				add_task({NavTaskType::WAIT, {}, 0.5f});
+				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, -0.5f), 0});
+				add_task({NavTaskType::WAIT, {}, 0.5f});
+				break;
+
+			case TASK_DOWNUP:
+				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, -0.5f), 0});
+				add_task({NavTaskType::WAIT, {}, 0.5f});
+				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, 0.5f), 0});
+				add_task({NavTaskType::WAIT, {}, 0.5f});
+				break;
+
+			case TASK_CLKCIRCLE:
+				buoy_task_circle(1); // Add clockwise circle task
+				break;
+
+			case TASK_CNTRCIRCLE:
+				buoy_task_circle(-1); // Add counter-clockwise circle task
+				break;
+
+			case TASK_GATE:
+				buoy_task_circle(1); // Add clockwise circle task
+				break;
+			default:
+				PX4_ERR("Unknown OPi task: %d", opi_task);
+				break;
+		}
+
+
+	}
+
+}
+
+void RobosubNavigator::buoy_task_circle(uint8_t direction)
+{
+	if(!opi_startup)
+	{
+		// Initialize circle task parameters
+		opi_startup = true;
+
+		_opi_circle_yaw.setGains(_param_opi_circle_yaw_kp.get(), _param_opi_circle_yaw_ki.get(), _param_opi_circle_yaw_kd.get());
+		_opi_circle_distance.setGains(_param_opi_circle_distance_kp.get(), _param_opi_circle_distance_ki.get(), _param_opi_circle_distance_kd.get());
+
+		_opi_circle_yaw.setOutputLimits(-1.0f, 1.0f);
+		_opi_circle_distance.setOutputLimits(-1.0f, 1.0f);
+
+		_opi_circle_yaw.setIntegralLimits(-1.0f, 1.0f);
+		_opi_circle_distance.setIntegralLimits(-1.0f, 1.0f);
+
+		_opi_circle_yaw.setSetpoint(TARGETANGLE);
+		_opi_circle_distance.setSetpoint(TARGETDISTANCE);
+
+		float opi_circumference = 2 * M_PI * TARGETDISTANCE;
+
+		add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(opi_circumference, 0.f, 0.f), 0}); // Start at the target distance
+	}
+
+	hrt_abstime now = hrt_absolute_time();  // current time in microseconds
+	float dt = (now - _last_run_time) / 1e6f;  // convert to seconds
+	_last_run_time = now;
+
+	_opi_circle_yaw.update(_opi_detection.heading, dt);
+	_opi_circle_distance.update(_opi_detection.distance, dt);
+
+	send_heading_setpoint(_opi_circle_yaw.getOutput() * direction); // Apply direction to the yaw output
+	send_position_setpoint(matrix::Vector3f(0.f, _opi_circle_distance.getOutput(), 0.f)); // Set position based on the distance
+}
+
 void RobosubNavigator::Run()
 {
 	// check for parameter updates

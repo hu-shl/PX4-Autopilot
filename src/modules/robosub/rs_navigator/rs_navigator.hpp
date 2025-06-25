@@ -35,10 +35,12 @@
 
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
+#include <lib/pid/PID.hpp>
 #include <uORB/SubscriptionInterval.hpp>
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/drone_task.h>
 #include <uORB/topics/trajectory_setpoint.h>
+#include <uORB/topics/opi_detection.h>
 #include <uORB/topics/vehicle_local_position.h>
 #include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
@@ -86,6 +88,28 @@
 	  */
 	 void parameters_update(bool force = false);
 
+	#define TARGETDISTANCE 1.0f // Target distance for circle task
+	#define TARGETANGLE 0.0f // Target angle for circle task
+
+	bool _opi_startup = false; // Flag to indicate if the OPI detection has started
+
+	enum class {
+		orange = 0,
+		white,
+		red,
+		black,
+		yellow,
+	} color_t;
+
+	enum class {
+		TASK_UPDOWN = 1,
+		TASK_DOWNUP = 2,
+		TASK_CLKCIRCLE = 3,
+		TASK_CNTRCIRCLE = 4,
+		TASK_GATE = 5,
+
+	} opi_task_t;
+
 	enum class NavTaskType {
 		MOVE_XYZ,
 		WAIT,
@@ -98,6 +122,8 @@
 		float wait_time_s;
 		float heading;
 	};
+
+	uint8_t opi_task = 0;
 	static constexpr int MAX_TASKS = 8;
 	NavTask _task_queue[MAX_TASKS];
 	int _task_head = 0;
@@ -105,20 +131,34 @@
 	bool _task_active = false;
 	hrt_abstime _task_start_time = 0;
 
+	PID _opi_circle_yaw{};
+	PID _opi_circle_distance{};
+
 	void process_task(const matrix::Vector3f &current_pos, const float &heading);
 	void add_task(const NavTask &task);
 
 	uORB::Publication<trajectory_setpoint_s> trajectory_setpoint_pub{ORB_ID(trajectory_setpoint)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
 	uORB::Subscription _drone_task_sub{ORB_ID(drone_task)};
+	uORB::Subscription _opi_detection_sub{ORB_ID(opi_detection)};
 	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
 
+	opi_detection_s _opi_detection{};
 	drone_task_s _drone_task{};
 	vehicle_local_position_s local_pos{};
 	status_s status_msg{};
 	int grid_line = 0;
 	bool grid_forward = true;
 
+	// Parameters
+	DEFINE_PARAMETERS(\
+		(ParamFloat<px4::params::OPI_CIRCLE_YAW_KP>) _param_opi_circle_yaw_kp, \
+		(ParamFloat<px4::params::OPI_CIRCLE_YAW_KI>) _param_opi_circle_yaw_ki, \
+		(ParamFloat<px4::params::OPI_CIRCLE_YAW_KD>) _param_opi_circle_yaw_kd, \
+		(ParamFloat<px4::params::OPI_CIRCLE_DISTANCE_KP>) _param_opi_circle_distance_kp, \
+		(ParamFloat<px4::params::OPI_CIRCLE_DISTANCE_KI>) _param_opi_circle_distance_ki, \
+		(ParamFloat<px4::params::OPI_CIRCLE_DISTANCE_KD>) _param_opi_circle_distance_kd, \
+	)
 
 	void movement_test(const matrix::Vector3f &_current_pos);
 	float distance_to(const matrix::Vector3f &a, const matrix::Vector3f &b) { return (a - b).norm(); }

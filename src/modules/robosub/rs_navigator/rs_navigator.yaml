@@ -1,0 +1,67 @@
+module_name: rs_navigator
+
+parameters:
+  - group: Robosub Navigator
+    definitions:
+      OPI_CIRCLE_YAW_KP:
+        description:
+          short: kP value for the OPI circle yaw controller
+          long: |
+            The kP value for the OPI circle yaw controller.
+        type: float
+        default: 1.0
+        min: 0.0
+        max: 10.0
+        decimal: 1
+
+      OPI_CIRCLE_YAW_KI:
+        description:
+          short: kI value for the OPI circle yaw controller
+          long: |
+            The kI value for the OPI circle yaw controller.
+        type: float
+        default: 1.0
+        min: 0.0
+        max: 10.0
+        decimal: 1
+      OPI_CIRCLE_YAW_KD:
+        description:
+          short: kD value for the OPI circle yaw controller
+          long: |
+            The kD value for the OPI circle yaw controller.
+        type: float
+        default: 1.0
+        min: 0.0
+        max: 10.0
+        decimal: 1
+      OPI_CIRCLE_DISTANCE_KP:
+        description:
+          short: kP value for the OPI circle distance controller
+          long: |
+            The kP value for the OPI circle distance controller.
+        type: float
+        default: 1.0
+        min: 0.0
+        max: 10.0
+        decimal: 1
+
+      OPI_CIRCLE_DISTANCE_KI:
+        description:
+          short: kI value for the OPI circle distance controller
+          long: |
+            The kI value for the OPI circle distance controller.
+        type: float
+        default: 1.0
+        min: 0.0
+        max: 10.0
+        decimal: 1
+      OPI_CIRCLE_DISTANCE_KD:
+        description:
+          short: kD value for the OPI circle distance controller
+          long: |
+            The kD value for the OPI circle distance controller.
+        type: float
+        default: 1.0
+        min: 0.0
+        max: 10.0
+        decimal: 1
