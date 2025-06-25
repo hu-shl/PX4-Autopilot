@@ -121,21 +121,26 @@ RobosubRemoteControl::~RobosubRemoteControl() {
 void RobosubRemoteControl::Run() {
         perf_begin(_loop_perf);
 
-        // if (!_status_sub.update(&_status_msg)) {
-        if (1) {
+        if (!_status_sub.update(&_status_msg) && status_safe) {
                 taskStat();
 
                 receiver();
         } else {
-                PX4_WARN("Force override active, motors will be forced to go up");
-                RobosubMotorControl robosub_motor_control;
-                robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
-                robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
+		status_safe = false;
+		if (_status_msg.warning == status_s::STATUS_HIGH_VALUE_DETECTED) {
+			RobosubMotorControl robosub_motor_control;
+			robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
+			robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
+			robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
+			robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
+			robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
+			robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
+			robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
+		} else if (_status_msg.warning == status_s::STATUS_LOW_BATTERY) {
+			PX4_ERR("Low battery detected");
+		} else if (_status_msg.warning == status_s::STATUS_CRITICAL_BATTERY) {
+			PX4_ERR("Critical battery level");
+		}
         }
 
         // Schedule();

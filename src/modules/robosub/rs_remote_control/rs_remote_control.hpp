@@ -117,6 +117,8 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 
         void taskStat();
 
+	bool status_safe = true;
+
         void parameters_update(bool force = false);
 
         DEFINE_PARAMETERS(
