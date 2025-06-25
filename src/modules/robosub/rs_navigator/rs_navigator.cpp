@@ -165,6 +165,26 @@ void RobosubNavigator::send_heading_setpoint(const float &heading) {
 	trajectory_setpoint_pub.publish(setpoint);
 }
 
+void RobosubNavigator::send_emergency_stop(bool up) {
+    // Clear the task queue
+    _task_head = _task_tail;
+    _task_active = false;
+
+    // Send a stop command to the vehicle
+    trajectory_setpoint_s setpoint{};
+    setpoint.timestamp = hrt_absolute_time();
+    if (up) {
+	setpoint.position[2] = 1.f; // Move up
+    } else {
+	setpoint.position[2] = 0.f; // Move down
+    }
+    setpoint.position[0] = 0.f;
+    setpoint.position[1] = 0.f;
+    setpoint.yaw = 0.f; // Stop rotation
+
+    trajectory_setpoint_pub.publish(setpoint);
+}
+
 void RobosubNavigator::search_grid(const matrix::Vector3f &current_pos, const float &current_heading) {
     // Only add new tasks if the queue is empty and we haven't finished
     if (_task_head == _task_tail && (grid_line * SEARCH_GRID_SPACING < SEARCH_GRID_WIDTH)) {
@@ -209,6 +229,21 @@ void RobosubNavigator::Run()
 	// check for drone task updates
 	if (_drone_task_sub.updated()) {
 		_drone_task_sub.copy(&_drone_task);
+	}
+	if (_status_sub.update(&status_msg)) { // I definatly don't agree with the way we handle emergency stop but whatever
+		if (status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) {
+			PX4_ERR("High value detected, stopping navigation");
+			send_emergency_stop(true);
+		}
+		else if (status_msg.status == status_s::STATUS_LOW_BATTERY) {
+			PX4_ERR("Low battery detected, stopping navigation");
+			send_emergency_stop(false);
+		}
+		else if (status_msg.status == status_s::STATUS_CRITICAL_BATTERY) {
+			PX4_ERR("Critical battery level, stopping navigation");
+			send_emergency_stop(false);
+		}
+		return;
 	}
 	if (_drone_task.task == drone_task_s::TASK_AUTONOMOUS) {
 		if (_vehicle_local_position_sub.update(&local_pos)) {
