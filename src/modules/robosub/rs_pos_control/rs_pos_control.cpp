@@ -239,13 +239,29 @@ void RobosubPosControl::Run()
         if (_status_sub.update(&_status))
         {
                 // a problem has occured, follow the trajectory setpoint
+                switch(_status.status)
+                {
+                        case status_s::STATUS_CRITICAL_BATTERY:
+                                // disable all motors
+                                configure_axis(X_Axis, PID_MODE_DISABLED);
+                                configure_axis(Y_Axis, PID_MODE_DISABLED);
+                                configure_axis(Z_Axis, PID_MODE_DISABLED);
+                                configure_axis(Roll_Axis, PID_MODE_DISABLED);
+                                configure_axis(Pitch_Axis, PID_MODE_DISABLED);
+                                configure_axis(Yaw_Axis, PID_MODE_DISABLED);
+                        break;
 
-                configure_axis(X_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.x, &_trajectory_setpoint.position[0]);
-                configure_axis(Y_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.y, &_trajectory_setpoint.position[1]);
-                configure_axis(Z_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.z, &_trajectory_setpoint.position[2]);
-                configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero);
-                configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
-                configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(), &_trajectory_setpoint.yaw);
+                        case status_s::STATUS_LOW_BATTERY:
+                        case status_s::STATUS_HIGH_VALUE_DETECTED:
+                                // follow the trajectory setpoint
+                                configure_axis(X_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.x, &_trajectory_setpoint.position[0]);
+                                configure_axis(Y_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.y, &_trajectory_setpoint.position[1]);
+                                configure_axis(Z_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.z, &_trajectory_setpoint.position[2]);
+                                configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero);
+                                configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
+                                configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(), &_trajectory_setpoint.yaw);
+                        break;
+                }
         }
         else
         {
