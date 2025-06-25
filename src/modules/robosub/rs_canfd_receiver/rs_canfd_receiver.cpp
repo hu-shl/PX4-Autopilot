@@ -141,21 +141,27 @@ void RoboSubCANFDReceiver::Run() {
         received_id.id = _raw_canfd_msg.id; // Put the received can id in the union to parse the id.
 
         if (received_id.can_id_seg.module_id_des == PIXHAWK || received_id.can_id_seg.module_id_des == GLOBAL ) { // Check if the dest module is 0x01 (Pixhawk)
-                switch (received_id.can_id_seg.client_id_src) {  // switch on the client id source
-                case 0x00:                                       // Internal humidity sensor
-                case 0x01:                                       // Internal temperature sensor
-                case 0x02: {                                     // Internal pressure sensor
+                switch (received_id.can_id_seg.client_id_des) {  // switch on the client id source
+                case 0x00:                                       // Internal pressure sensor
+                case 0x01:                                       // Internal humidity sensor
+                case 0x02: {                                     // Internal temperature sensor
                         // TODO: Add check to see if theres enough data in the raw canfd data.
-                        converter conv;
-                        memcpy(conv.bytes, _raw_canfd_msg.data, sizeof(conv.bytes));
+			converter conv;
+			if (_raw_canfd_msg.len == sizeof(conv.bytes)) {
+				memcpy(conv.bytes, _raw_canfd_msg.data, sizeof(conv.bytes));
 
-                        internal_sensors_s internal_sensor_msg{};            // create the temp message struct
-                        internal_sensor_msg.timestamp = hrt_absolute_time(); // set the timestamp
-                        internal_sensor_msg.module = received_id.can_id_seg.module_id_src; // set the module id
-                        internal_sensor_msg.sensor = received_id.can_id_seg.client_id_src; // set the sensor id
-                        internal_sensor_msg.value = conv.value;                            // set the value
+				internal_sensors_s internal_sensor_msg{};            // create the temp message struct
+				internal_sensor_msg.timestamp = hrt_absolute_time(); // set the timestamp
+				internal_sensor_msg.module = received_id.can_id_seg.module_id_src; // set the module id
+				internal_sensor_msg.sensor = received_id.can_id_seg.client_id_des; // set the sensor id
+				internal_sensor_msg.value = conv.value;                            // set the value
 
-                        internal_sensors_pub.publish(internal_sensor_msg); // publish the data
+				internal_sensors_pub.publish(internal_sensor_msg); // publish the data
+			}
+			else {
+				PX4_ERR("Received internal sensor data with incorrect length: %d, expected: %zu",
+					_raw_canfd_msg.len, sizeof(conv.bytes));
+				}
                         break;
                 }
                 case 0x04: {                                                 // LP4 GPIO non contact water level
@@ -172,9 +178,14 @@ void RoboSubCANFDReceiver::Run() {
                 }
                 case 0x0A: { // ClientID Thruster ESC telemetery
                         if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
-                                memcpy(esc_telem.payload, _raw_canfd_msg.data,
-                                       sizeof(esc_telem.payload)); // Put the received data in union
-                                send_esc_status(&esc_telem);
+				if (_raw_canfd_msg.len == sizeof(esc_telem.payload)) { // Check if the length of the data is correct
+					memcpy(esc_telem.payload, _raw_canfd_msg.data,
+					sizeof(esc_telem.payload)); // Put the received data in union
+                                	send_esc_status(&esc_telem);
+				} else {
+					PX4_ERR("Received ESC telemetry with incorrect length: %d, expected: %zu",
+						_raw_canfd_msg.len, sizeof(esc_telem.payload));
+					}
                         }
                 }
                 }
