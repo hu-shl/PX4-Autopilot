@@ -140,7 +140,7 @@ void RoboSubCANFDReceiver::Run() {
 
         received_id.id = _raw_canfd_msg.id; // Put the received can id in the union to parse the id.
 
-        if (received_id.can_id_seg.module_id_des == MAINBRAIN) { // Check if the dest module is 0x01 (Pixhawk)
+        if (received_id.can_id_seg.module_id_des == PIXHAWK || received_id.can_id_seg.module_id_des == GLOBAL ) { // Check if the dest module is 0x01 (Pixhawk)
                 switch (received_id.can_id_seg.client_id_src) {  // switch on the client id source
                 case 0x00:                                       // Internal humidity sensor
                 case 0x01:                                       // Internal temperature sensor
@@ -179,9 +179,11 @@ void RoboSubCANFDReceiver::Run() {
                 }
                 }
         } else { // if the hardware filters are set up correctly, this should never happen
-                PX4_ERR("Received message from unknown source: module_id_src=%lu, client_id_src=%lu",
+                PX4_ERR("Received message from unknown source: module_id_src=%lu, client_id_src=%lu, module_id_des=%lu, client_id_des=%lu",
                         (unsigned long)received_id.can_id_seg.module_id_src,
-                        (unsigned long)received_id.can_id_seg.client_id_src);
+                        (unsigned long)received_id.can_id_seg.client_id_src,
+                        (unsigned long)received_id.can_id_seg.module_id_des,
+                        (unsigned long)received_id.can_id_seg.client_id_des);
         }
         return;
 }
