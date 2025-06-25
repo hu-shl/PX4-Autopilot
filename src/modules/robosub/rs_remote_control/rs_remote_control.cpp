@@ -177,21 +177,36 @@ void RobosubRemoteControl::taskStat() {
 
                 drone_task_s drone_task{};
 
-                if (stateEnable == 1) {
-                        bitReg = ((normalized[5] > 0.0f) ? 1 : 0) | ((normalized[6] > 0.0f) ? 1 : 0) << 1 |
+                if (stateEnable == 1)
+                {
+                        bitReg = ((normalized[5] > 0.0f) ? 1 : 0) |
+                                 ((normalized[6] > 0.0f) ? 1 : 0) << 1 |
                                  ((normalized[7] > 0.0f) ? 1 : 0) << 2;
-                        switch (bitReg) {
+                        switch (bitReg)
+                        {
                         case 0b000:
-                                drone_task.task = TASK_INIT;
+                                drone_task.task = TASK_REMOTECONTROLLED;
                                 break;
                         case 0b001:
-                                drone_task.task = TASK_DEFAULT;
+                                drone_task.task = TASK_BUOYANCYCTRL;
                                 break;
                         case 0b010:
-                                drone_task.task = TASK_AUTONOMOUS;
+                                drone_task.task = TASK_DPGOAL;
+                                break;
+                        case 0b011:
+                                drone_task.task = TASK_DPTELEARM;
+                                break;
+                        case 0b100:
+                                drone_task.task = TASK_SEARCHBUOY;
+                                break;
+                        case 0b101:
+                                drone_task.task = TASK_SEARCHTUBE;
+                                break;
+                        case 0b110:
+                                drone_task.task = TASK_TASK2;
                                 break;
                         case 0b111:
-                                drone_task.task = TASK_REMOTE_CONTROLLED;
+                                drone_task.task = TASK_TASK1;
                                 break;
                         default:
 
@@ -210,15 +225,17 @@ void RobosubRemoteControl::taskStat() {
 
                 }
         }
-}
+ }
 
 void RobosubRemoteControl::receiver() {
         RobosubMotorControl robosub_motor_control;
 
-        if (update1) {
-                if (bitReg == TASK_REMOTE_CONTROLLED) {
-                        input_rc_s rc_data{};
-                        _input_rc_sub.copy(&rc_data);
+		if (update1)
+		{
+			if(bitReg == TASK_REMOTECONTROLLED)
+			{
+				input_rc_s rc_data {};
+				_input_rc_sub.copy(&rc_data);
 
                         if (_water_detection_sub.update(&_water_detection)) {
                                 sensor_mainbrain = _water_detection.mainbrain_sensor;
