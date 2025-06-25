@@ -137,6 +137,23 @@ void RoboSubCANFDSender::Run()
 		send_raw_canfd_pub.publish(_send_raw_canfd_msg);
 	}
 
+	if (arm_ctrl_sub.update(&arm_ctrl_msg)) {
+		send_id.can_id_seg.module_id_src = MODULE_ID;
+		send_id.can_id_seg.client_id_src = 0x0B;
+		send_id.can_id_seg.module_id_des = 0x05;
+		send_id.can_id_seg.client_id_des = 0x0B;
+		send_id.can_id_seg.command_type = 0x05; // General command
+		send_id.can_id_seg.rest = 0x00; // Rest of the ID is 0
+
+		_send_raw_canfd_msg.id = (send_id.id | CAN_EFF_FLAG);
+		_send_raw_canfd_msg.data[0] = 0x0B;
+		memcpy(_send_raw_canfd_msg.data + 1, arm_ctrl_msg.states, 6);
+		_send_raw_canfd_msg.len = 7;
+		_send_raw_canfd_msg.timestamp = hrt_absolute_time();
+		// Publish the test message
+		send_raw_canfd_pub.publish(_send_raw_canfd_msg);
+	}
+
 }
 
 void RoboSubCANFDSender::parameters_update(bool force)

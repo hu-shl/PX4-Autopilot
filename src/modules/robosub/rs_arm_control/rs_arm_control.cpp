@@ -77,37 +77,43 @@ void RobosubArmControl::teleoperated_arm() {
 		}
 
 		if (fabsf(normalized[0]) < THRESHOLD)
-			states[SEG1] = HOLD;
+			istates[SEG1] = HOLD;
 		else if (normalized[0] < 0)
-			states[SEG1] = EXTEND;
+			istates[SEG1] = EXTEND;
 		else
-			states[SEG1] = CONTRACT;
+			istates[SEG1] = CONTRACT;
 
 		if (fabsf(normalized[1]) < THRESHOLD)
-			states[SEG2] = HOLD;
+			istates[SEG2] = HOLD;
 		else if (normalized[1] < 0)
-			states[SEG2] = EXTEND;
+			istates[SEG2] = EXTEND;
 		else
-			states[SEG2] = CONTRACT;
+			istates[SEG2] = CONTRACT;
 
 		if (normalized[2] < -THRESHOLD) {
 			if (normalized[2] >= -0.45f)
-				states[BASE] = CONTRACT;
+				istates[BASE] = CONTRACT;
 			else
-				states[BASE] = EXTEND;
+				istates[BASE] = EXTEND;
 		} else if (normalized[2] > THRESHOLD) {
-			states[GRIP] = EXTEND;
-		} else { 
-			states[BASE] = HOLD;
-			states[GRIP] = HOLD;
+			istates[GRIP] = EXTEND;
+		} else {
+			istates[BASE] = HOLD;
+			istates[GRIP] = HOLD;
 		}
 
 		if (fabsf(normalized[3]) < THRESHOLD)
-			states[SEG3] = HOLD;
+			istates[SEG3] = HOLD;
 		else if (normalized[3] < 0)
-			states[SEG3] = EXTEND;
+			istates[SEG3] = EXTEND;
 		else
-			states[SEG3] = CONTRACT;
+			istates[SEG3] = CONTRACT;
+
+		_arm_ctrl.timestamp = hrt_absolute_time();
+
+		memcpy(_arm_ctrl.states, istates, 6);
+
+		_arm_ctrl_pub.publish(_arm_ctrl);
 	}
 }
 

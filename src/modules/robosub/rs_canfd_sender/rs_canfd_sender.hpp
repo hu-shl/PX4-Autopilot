@@ -40,6 +40,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/control_lamp.h>
 #include <uORB/topics/buoyancy_ctrl.h>
+#include <uORB/topics/arm_ctrl.h>
 #include <nuttx/can.h>
 #include <uORB/topics/raw_canfd.h>
 #include <uORB/Publication.hpp>
@@ -98,8 +99,10 @@ private:
 	uORB::Publication<px4::msg::RawCanfd> send_raw_canfd_pub{ORB_ID(send_raw_canfd)};
 	uORB::SubscriptionCallbackWorkItem control_lamp_sub{this, ORB_ID(control_lamp)};
 	uORB::SubscriptionCallbackWorkItem buoyancy_ctrl_sub{this, ORB_ID(buoyancy_ctrl)};
+	uORB::SubscriptionCallbackWorkItem arm_ctrl_sub{this, ORB_ID(arm_ctrl)};
 	control_lamp_s control_lamp_msg{};
 	buoyancy_ctrl_s buoyancy_ctrl_msg{};
+	arm_ctrl_s arm_ctrl_msg{};
 
 
 };

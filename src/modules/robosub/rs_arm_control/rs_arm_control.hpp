@@ -101,7 +101,7 @@
 
 	 arm_map_t arm_map;
 
-	 uint16_t states[6] = {0, 0, 0, 0, 0, 0};
+	 uint8_t istates[6] = {0, 0, 0, 0, 0, 0};
 
 	 void teleoperated_arm();
 	 uint16_t servo_angle(int8_t direction, uint16_t angle);
