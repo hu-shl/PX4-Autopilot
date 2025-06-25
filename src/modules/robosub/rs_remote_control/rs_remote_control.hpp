@@ -131,10 +131,12 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
 
         uORB::Publication<drone_task_s> _drone_task_pub{ORB_ID(drone_task)};
+	uORB::Publication<vehicle_command_s> _vehicle_command_pub{ORB_ID(vehicle_command)};
+
 
         drone_task_s _drone_task{};
         input_rc_s _input_rc{};
-	status_s status_msg{};
+	      status_s status_msg{};
 
         float normalized[8];
         float range = 1.0f;

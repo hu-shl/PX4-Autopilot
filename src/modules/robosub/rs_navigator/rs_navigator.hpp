@@ -45,6 +45,10 @@
 #include <uORB/SubscriptionCallback.hpp>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
 
+#define SEARCH_GRID_LENGTH 20
+#define SEARCH_GRID_WIDTH 17.5
+#define SEARCH_GRID_SPACING 1
+
  using namespace time_literals;
 
  extern "C" __EXPORT int rs_navigator_main(int argc, char *argv[]);
@@ -84,12 +88,14 @@
 	enum class NavTaskType {
 		MOVE_XYZ,
 		WAIT,
+		ROTATE,
 	};
 
 	struct NavTask {
 		NavTaskType type;
 		matrix::Vector3f target;
 		float wait_time_s;
+		float heading;
 	};
 	static constexpr int MAX_TASKS = 8;
 	NavTask _task_queue[MAX_TASKS];
@@ -98,19 +104,33 @@
 	bool _task_active = false;
 	hrt_abstime _task_start_time = 0;
 
-	void process_task(const matrix::Vector3f &current_pos);
+	void process_task(const matrix::Vector3f &current_pos, const float &heading);
 	void add_task(const NavTask &task);
 
 	uORB::Publication<trajectory_setpoint_s> trajectory_setpoint_pub{ORB_ID(trajectory_setpoint)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
 	uORB::Subscription _drone_task_sub{ORB_ID(drone_task)};
 	drone_task_s _drone_task{};
+	vehicle_local_position_s local_pos{};
+	int grid_line = 0;
+	bool grid_forward = true;
 
 
-	void movement_test();
+	void movement_test(const matrix::Vector3f &_current_pos);
 	float distance_to(const matrix::Vector3f &a, const matrix::Vector3f &b) { return (a - b).norm(); }
+	float heading_to(const float &a, const float &b) { return fabsf((a - b)); }
 	void send_position_setpoint(const matrix::Vector3f &pos);
-	void search_grid();
+	void send_heading_setpoint(const float &heading);
+	void search_grid(const matrix::Vector3f &_current_pos, const float &current_heading);
+	float calculate_next_heading(const float &current_heading, const float &target_heading) {
+		float diff = (target_heading - current_heading);
+		if (double(diff) > M_PI) {
+			diff -= float(2 * M_PI);
+		} else if (double(diff) < -M_PI) {
+			diff += float(2 * M_PI);
+		}
+		return float(current_heading + diff) ;
+	}
 
 	 // Subscriptions
 	 uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
