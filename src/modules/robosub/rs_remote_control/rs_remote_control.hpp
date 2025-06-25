@@ -119,6 +119,8 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         void taskStat();
 
 	bool status_safe = true;
+	hrt_abstime status_emergency_start = 0;
+
 
         void parameters_update(bool force = false);
 

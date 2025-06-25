@@ -125,17 +125,27 @@ void RobosubRemoteControl::Run() {
                 taskStat();
 
                 receiver();
-        } else {
+        } else { // I don't agree with handling the emergency in here. I think it should be handled in the position controller.
 		status_safe = false;
 		if (_status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) {
+			if (status_emergency_start == 0) {
+				status_emergency_start = hrt_absolute_time();
+			}
 			RobosubMotorControl robosub_motor_control;
-			robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
-			robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
-			robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
-			robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
-			robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
-			robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
-			robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
+			if (hrt_elapsed_time(&status_emergency_start) > 5_s) {
+				robosub_motor_control.actuator_test(MOTOR_UP1, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP2, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP3, 0.0f, 0, false);
+			}
+			else {
+				robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
+			}
 		} else if (_status_msg.status == status_s::STATUS_LOW_BATTERY) {
 			PX4_ERR("Low battery detected");
 		} else if (_status_msg.status == status_s::STATUS_CRITICAL_BATTERY) {

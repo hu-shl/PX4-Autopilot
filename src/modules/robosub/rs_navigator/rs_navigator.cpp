@@ -230,7 +230,16 @@ void RobosubNavigator::Run()
 	if (_drone_task_sub.updated()) {
 		_drone_task_sub.copy(&_drone_task);
 	}
-	if (_status_sub.update(&status_msg)) { // I definatly don't agree with the way we handle emergency stop but whatever
+	if (_status_sub.update(&status_msg) || !status_safe) { // I definatly don't agree with the way we handle emergency stop but whatever. In my opinion the pos control should handle the position when theres an emergency not the navigator AND remote control.
+		status_safe = false;
+		if (status_emergency_start == 0) {
+			status_emergency_start = hrt_absolute_time();
+		}
+		if (hrt_elapsed_time(&status_emergency_start) > 5_s) {
+			send_emergency_stop(false);
+			return;
+		}
+
 		if (status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) {
 			PX4_ERR("High value detected, stopping navigation");
 			send_emergency_stop(true);

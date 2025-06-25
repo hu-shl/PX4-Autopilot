@@ -136,6 +136,10 @@
 		return float(current_heading + diff) ;
 	}
 	void send_emergency_stop(bool up = false);
+	bool status_safe = true;
+	hrt_abstime status_emergency_start = 0;
+
+
 
 	 // Subscriptions
 	 uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
