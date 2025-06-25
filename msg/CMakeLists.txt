@@ -270,6 +270,7 @@ set(msg_files
 	robosub/InternalSensors.msg
 	robosub/OpiDetection.msg
 	robosub/ControlLamp.msg
+	robosub/Status.msg
 )
 list(SORT msg_files)
 

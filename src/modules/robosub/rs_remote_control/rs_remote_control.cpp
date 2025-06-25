@@ -121,7 +121,7 @@ RobosubRemoteControl::~RobosubRemoteControl() {
 void RobosubRemoteControl::Run() {
         perf_begin(_loop_perf);
 
-        // if (!force_overide) {
+        // if (!_status_sub.update(&_status_msg)) {
         if (1) {
                 taskStat();
 
@@ -137,9 +137,6 @@ void RobosubRemoteControl::Run() {
                 robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
                 robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
         }
-
-        check_internal_state(); // Check if the internal state of the module is correct and if something is wrong force
-                                // the motors to go up.
 
         // Schedule();
         perf_end(_loop_perf);
@@ -262,111 +259,6 @@ void RobosubRemoteControl::receiver() {
                 }
                 update1 = 0;
         }
-}
-
-void RobosubRemoteControl::check_internal_state() {
-        // Check if the internal state of the module is correct and if something is wrong force the motors to go up.
-        if (_internal_sensors_sub.updated()) {
-                internal_sensors_s internal_sensors{};
-                _internal_sensors_sub.copy(&internal_sensors);
-                int module_index = get_module_index(internal_sensors.module);
-                if (module_index < 0) {
-                        PX4_ERR("Unknown module: %d", internal_sensors.module);
-                        return;
-                }
-                float *filtered_value = nullptr;
-                SensorFilter *filter = nullptr;
-                float param_offset = 0.0f;
-                const char *warn_msg = nullptr;
-
-                switch (internal_sensors.sensor) {
-                case SENSOR_HUMIDITY:
-                        filtered_value = &_filtered_humidity[module_index];
-                        filter = &_humidity_filter[module_index];
-                        param_offset = _param_offset_rel_humidity.get();
-                        warn_msg = "High humidity detected: %.2f%%";
-                        break;
-                case SENSOR_TEMPERATURE:
-                        filtered_value = &_filtered_temperature[module_index];
-                        filter = &_temperature_filter[module_index];
-                        param_offset = _param_offset_temperature.get();
-                        warn_msg = "High temperature detected: %.2f°C";
-                        break;
-                case SENSOR_PRESSURE:
-                        filtered_value = &_filtered_pressure[module_index];
-                        filter = &_pressure_filter[module_index];
-                        param_offset = _param_offset_pressure.get();
-                        warn_msg = "Abnormal pressure detected: %.2f hPa";
-                        break;
-                default:
-                        PX4_ERR("Unknown sensor type: %d", internal_sensors.sensor);
-                        break;
-                }
-
-                if (filter && filtered_value) {
-                        *filtered_value = update_running_average(*filter, internal_sensors.value);
-                        if (*filtered_value > filter->initial_average + param_offset) {
-                                PX4_WARN(warn_msg, (double)*filtered_value);
-                                force_overide = true;
-                        }
-                }
-
-                // Only calculate absolute humidity if temperature and humidity were updated close in time
-                const uint64_t ABS_HUMIDITY_MAX_DELTA_US = 200000; // 200 ms
-                if (_temperature_filter[module_index].updated && _humidity_filter[module_index].updated) {
-                        uint64_t temp_time = _temperature_filter[module_index].last_update;
-                        uint64_t hum_time = _humidity_filter[module_index].last_update;
-                        uint64_t delta = (temp_time > hum_time) ? (temp_time - hum_time) : (hum_time - temp_time);
-                        if (delta <= ABS_HUMIDITY_MAX_DELTA_US) {
-                                _filtered_absolute_humidity[module_index] = update_running_average(
-                                    _absolute_humidity_filter[module_index],
-                                    calculate_absolute_humidity(_filtered_humidity[module_index],
-                                                                _filtered_temperature[module_index]));
-                                if (_filtered_absolute_humidity[module_index] >
-                                    _absolute_humidity_filter[module_index].initial_average +
-                                        _param_offset_abs_humidity.get()) {
-                                        PX4_WARN("High absolute humidity detected: %.2f g/m³",
-                                                 (double)_filtered_absolute_humidity[module_index]);
-                                        force_overide = true;
-                                }
-                        } else {
-                                // Skipping absolute humidity calculation due to large delta
-                        }
-                        _temperature_filter[module_index].updated = false;
-                        _humidity_filter[module_index].updated = false;
-                }
-        }
-}
-
-float RobosubRemoteControl::update_running_average(SensorFilter &filter, float new_value) {
-        // Remove old value from sum if buffer is full
-        if (filter.count >= FILTER_SIZE) {
-                if (fabsf(filter.initial_average) <= 1e-5f) {
-                        filter.initial_average = filter.sum / filter.count;
-                }
-                filter.sum -= filter.values[filter.index];
-        }
-
-        // Add new value
-        filter.values[filter.index] = new_value;
-        filter.sum += new_value;
-
-        // Update index and count
-        filter.index = (filter.index + 1) % FILTER_SIZE;
-        if (filter.count < FILTER_SIZE) {
-                filter.count++;
-        }
-
-        filter.updated = true;
-        filter.last_update = hrt_absolute_time();
-        // Return average
-        return filter.sum / filter.count;
-}
-
-// Helper function for absolute humidity calculation
-float RobosubRemoteControl::calculate_absolute_humidity(float rel_humidity, float temperature) {
-        // Formula: 13.25 * RH * exp(17.67 * T / (T + 243.5)) / (T + 273.15)
-        return 13.25f * rel_humidity * expf(17.67f * temperature / (temperature + 243.5f)) / (temperature + 273.15f);
 }
 
 void RobosubRemoteControl::parameters_update(bool force) {
