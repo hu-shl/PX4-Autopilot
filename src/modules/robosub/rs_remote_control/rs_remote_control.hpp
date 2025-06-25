@@ -46,6 +46,7 @@
 #include <uORB/topics/water_detection.h>
 #include <uORB/topics/drone_task.h>
 #include <uORB/topics/status.h>
+#include <uORB/topics/vehicle_command.h>
 
 using namespace time_literals;
 
@@ -138,7 +139,8 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 
         drone_task_s _drone_task{};
         input_rc_s _input_rc{};
-	      status_s status_msg{};
+	status_s _status_msg{};
+	vehicle_command_s _vehicle_command_arm{};
 
         float normalized[8];
         float range = 1.0f;
