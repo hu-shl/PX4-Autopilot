@@ -227,6 +227,8 @@ void RobosubPosControl::Run()
         }
 
         _drone_task_sub.update(&_drone_task); // current mode of the drone
+        _status_sub.update(&_status); // system status
+
         _vehicle_local_position_sub.update(&_vehicle_local_position); // x, y, z position and velocity
         _vehicle_attitude_sub.update(&_vehicle_attitude); // roll, pitch, yaw attitude
         _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity); // vehicle setpoint for position and attitude
@@ -234,26 +236,9 @@ void RobosubPosControl::Run()
         matrix::Quatf current_attitude_quat(_vehicle_attitude.q);
         matrix::Eulerf current_attitude(current_attitude_quat.dcm_z());
 
-
-
-        switch (_drone_task.task)
+        if (_status_sub.update(&_status))
         {
-        case _drone_task.TASK_REMOTECONTROLLED: // RAW Remote Control
-        case _drone_task.TASK_BUOYANCYCRTL:     // Buoyancy Control
-                // Task: Disable all position control
-                configure_axis(X_Axis, PID_MODE_DISABLED);
-                configure_axis(Y_Axis, PID_MODE_DISABLED);
-                configure_axis(Z_Axis, PID_MODE_DISABLED);
-                configure_axis(Roll_Axis, PID_MODE_DISABLED);
-                configure_axis(Pitch_Axis, PID_MODE_DISABLED);
-                configure_axis(Yaw_Axis, PID_MODE_DISABLED);
-
-                break;
-
-        case _drone_task.TASK_SEARCHBUOY: // Search Buoy Algo
-        case _drone_task.TASK_SEARCHTUBE: // Search Tube Algo
-                // setup all axis for position control
-                // keep attitude setpoints at 0
+                // a problem has occured, follow the trajectory setpoint
 
                 configure_axis(X_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.x, &_trajectory_setpoint.position[0]);
                 configure_axis(Y_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.y, &_trajectory_setpoint.position[1]);
@@ -261,23 +246,68 @@ void RobosubPosControl::Run()
                 configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero);
                 configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
                 configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(), &_trajectory_setpoint.yaw);
-                break;
+        }
+        else
+        {
+                switch (_drone_task.task)
+                {
+                case _drone_task.TASK_REMOTECONTROLLED: // RAW Remote Control
+                case _drone_task.TASK_BUOYANCYCRTL:     // Buoyancy Control
+                        // Task: Disable all position control
+                        configure_axis(X_Axis, PID_MODE_DISABLED);
+                        configure_axis(Y_Axis, PID_MODE_DISABLED);
+                        configure_axis(Z_Axis, PID_MODE_DISABLED);
+                        configure_axis(Roll_Axis, PID_MODE_DISABLED);
+                        configure_axis(Pitch_Axis, PID_MODE_DISABLED);
+                        configure_axis(Yaw_Axis, PID_MODE_DISABLED);
 
-        case _drone_task.TASK_DPTELEARM: // Remote Controlled arm
-        case _drone_task.TASK_DPGOAL:    // Remote Controlled Positioning
-        case _drone_task.TASK_TASK2:     // default initialisation
-        case _drone_task.TASK_TASK1:
+                        break;
 
-        default: // in default state, keep position.
+                case _drone_task.TASK_SEARCHBUOY: // Search Buoy Algo
+                case _drone_task.TASK_SEARCHTUBE: // Search Tube Algo
+                        // setup all axis for position control
+                        // keep attitude setpoints at 0
 
-                // the setpoint is not used, so we can use zero
-                configure_axis(X_Axis, PID_MODE_HOLD_POSITION, false, &_vehicle_local_position.x, &zero);
-                configure_axis(Y_Axis, PID_MODE_HOLD_POSITION, false, &_vehicle_local_position.y, &zero);
-                configure_axis(Z_Axis, PID_MODE_HOLD_POSITION, false, &_vehicle_local_position.z, &zero);
-                configure_axis(Roll_Axis, PID_MODE_HOLD_POSITION, false, &current_attitude.phi(), &zero);
-                configure_axis(Pitch_Axis, PID_MODE_HOLD_POSITION, false, &current_attitude.theta(), &zero);
-                configure_axis(Yaw_Axis, PID_MODE_HOLD_POSITION, false, &current_attitude.psi(), &zero);
-                break;
+                        configure_axis(X_Axis, PID_MODE_POSITION, true,
+                                       &_vehicle_local_position.x,
+                                       &_trajectory_setpoint.position[0]);
+                        configure_axis(Y_Axis, PID_MODE_POSITION, true,
+                                       &_vehicle_local_position.y,
+                                       &_trajectory_setpoint.position[1]);
+                        configure_axis(Z_Axis, PID_MODE_POSITION, true,
+                                       &_vehicle_local_position.z,
+                                       &_trajectory_setpoint.position[2]);
+                        configure_axis(Roll_Axis, PID_MODE_POSITION, true,
+                                       &current_attitude.phi(), &zero);
+                        configure_axis(Pitch_Axis, PID_MODE_POSITION, true,
+                                       &current_attitude.theta(), &zero);
+                        configure_axis(Yaw_Axis, PID_MODE_POSITION, true,
+                                       &current_attitude.psi(),
+                                       &_trajectory_setpoint.yaw);
+                        break;
+
+                case _drone_task.TASK_DPTELEARM: // Remote Controlled arm
+                case _drone_task.TASK_DPGOAL: // Remote Controlled Positioning
+                case _drone_task.TASK_TASK2:  // default initialisation
+                case _drone_task.TASK_TASK1:
+
+                default: // in default state, keep position.
+
+                        // the setpoint is not used, so we can use zero
+                        configure_axis(X_Axis, PID_MODE_HOLD_POSITION, false,
+                                       &_vehicle_local_position.x, &zero);
+                        configure_axis(Y_Axis, PID_MODE_HOLD_POSITION, false,
+                                       &_vehicle_local_position.y, &zero);
+                        configure_axis(Z_Axis, PID_MODE_HOLD_POSITION, false,
+                                       &_vehicle_local_position.z, &zero);
+                        configure_axis(Roll_Axis, PID_MODE_HOLD_POSITION, false,
+                                       &current_attitude.phi(), &zero);
+                        configure_axis(Pitch_Axis, PID_MODE_HOLD_POSITION,
+                                       false, &current_attitude.theta(), &zero);
+                        configure_axis(Yaw_Axis, PID_MODE_HOLD_POSITION, false,
+                                       &current_attitude.psi(), &zero);
+                        break;
+                }
         }
 
         run_axis_pid(X_Axis);

@@ -63,6 +63,8 @@
 
 // Current data
 #include <uORB/topics/drone_task.h>
+#include <uORB/topics/status.h>
+
 #include <uORB/topics/vehicle_local_position.h>     // position and velocity for x, y and z
 #include <uORB/topics/vehicle_attitude.h>           // position for roll, pitch and yaw
 #include <uORB/topics/vehicle_angular_velocity.h>   // velocity for roll, pitch and yaw
@@ -163,6 +165,9 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
         uORB::Subscription _drone_task_sub{
             ORB_ID(drone_task)};                                // drone task subscription
 
+        uORB::Subscription _status_sub{
+            ORB_ID(status)};                                   // status subscription
+
         uORB::Subscription _vehicle_local_position_sub{
             ORB_ID(vehicle_local_position)};                           // vehicle local position subscription
 
@@ -187,10 +192,13 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>,
 
         perf_counter_t _loop_perf;
 
-        trajectory_setpoint_s
-            _trajectory_setpoint{}; // vehicle trajectory setpoint
         drone_task_s
             _drone_task{};   // drone task
+        status_s
+            _status{};       // status
+
+        trajectory_setpoint_s
+            _trajectory_setpoint{}; // vehicle trajectory setpoint
         vehicle_local_position_s
             _vehicle_local_position{}; // vehicle local position
         vehicle_attitude_s
