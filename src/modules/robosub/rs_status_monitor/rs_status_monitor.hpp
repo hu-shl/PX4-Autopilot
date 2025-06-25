@@ -42,24 +42,18 @@
 #include <uORB/Publication.hpp>
 #include <lib/perf/perf_counter.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
-#include <uORB/topics/input_rc.h>
-#include <uORB/topics/water_detection.h>
-#include <uORB/topics/drone_task.h>
+#include <uORB/topics/internal_sensors.h>
 #include <uORB/topics/status.h>
+#include <uORB/topics/battery_status.h>
 
 using namespace time_literals;
 
-extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
+extern "C" __EXPORT int rs_status_monitor_main(int argc, char *argv[]);
 
-class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
+class RobosubStatusMonitor : public ModuleBase<RobosubStatusMonitor>,
                              public ModuleParams,
                              public px4::ScheduledWorkItem {
       public:
-#define TASK_INIT 0b000
-#define TASK_DEFAULT 0b001
-#define TASK_AUTONOMOUS 0b010
-#define TASK_REMOTE_CONTROLLED 0b111
-
         enum MotorID {
                 MOTOR_FORWARDS1 = 101,
                 MOTOR_FORWARDS2 = 106,
@@ -70,10 +64,8 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
                 MOTOR_SIDE2 = 107
         };
 
-        RobosubRemoteControl();
-        ~RobosubRemoteControl();
-
-        void receiver();
+        RobosubStatusMonitor();
+        ~RobosubStatusMonitor();
 
         /** @see ModuleBase */
         static int task_spawn(int argc, char *argv[]);
@@ -102,44 +94,80 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 
         perf_counter_t _loop_perf;
 
-        uORB::Subscription _water_detection_sub{ORB_ID(water_detection)};
-
-        bool sensor_mainbrain = false;
-        bool sensor_power = false;
-
-        water_detection_s _water_detection{};
-        water_detection_s water_detection_msg{}; // create the temp message struct
-
-        float outputT200 = 0.0f;
-        float kP = 1.0f;
-        float kI = 1.0f;
-        float kD = 1.0f;
-
-        void taskStat();
+        float calculate_absolute_humidity(float rel_humidity, float temperature);
 
         void parameters_update(bool force = false);
 
-        DEFINE_PARAMETERS(
-                          (ParamFloat<px4::params::UP_MOTOR_RED>)_param_front_up_motor_reduction,
-                          (ParamFloat<px4::params::TILT_MODIFY>)_param_tilt_modifier,
-                          (ParamFloat<px4::params::THRUST_T200>)_param_thrust_t200_limiter
+        void check_internal_state();
+
+	void check_battery_status();
+
+        DEFINE_PARAMETERS((ParamFloat<px4::params::OFF_A_HUMIDITY>)_param_offset_abs_humidity,
+                          (ParamFloat<px4::params::OFF_TEMPERATURE>)_param_offset_temperature,
+                          (ParamFloat<px4::params::OFF_PRESSURE>)_param_offset_pressure,
+                          (ParamFloat<px4::params::OFF_R_HUMIDITY>)_param_offset_rel_humidity
 			)
 
         // Subscriptions
         uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
-        uORB::SubscriptionCallbackWorkItem _input_rc_sub{this, ORB_ID(input_rc)};
-	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
+        uORB::SubscriptionCallbackWorkItem _internal_sensors_sub{this, ORB_ID(internal_sensors)};
+	uORB::Publication<status_s> status_pub{ORB_ID(status)};
+	uORB::Subscription _battery_status_sub{ORB_ID(battery_status)};
 
-        uORB::Publication<drone_task_s> _drone_task_pub{ORB_ID(drone_task)};
-
-        drone_task_s _drone_task{};
-        input_rc_s _input_rc{};
 	status_s status_msg{};
-
-        float normalized[8];
-        float range = 1.0f;
-        uint8_t bitReg = 0;
-        uint8_t update1 = 0;
+	battery_status_s _battery_status{};
 
 
+        bool force_overide = false;
+	const uint64_t ABS_HUMIDITY_MAX_DELTA_US = 200000; // 200 ms
+
+
+        // Running average filter variables
+        static constexpr size_t FILTER_SIZE = 10;
+        static constexpr size_t N_MODULES = 2;
+
+        struct SensorFilter {
+                float values[FILTER_SIZE];
+                size_t index;
+                size_t count;
+                float sum;
+                float initial_average = 0.0f;
+                bool updated = false;
+                uint64_t last_update = 0;
+
+                SensorFilter() : index(0), count(0), sum(0.0f), last_update(0) {
+                        for (size_t i = 0; i < FILTER_SIZE; i++) {
+                                values[i] = 0.0f;
+                        }
+                }
+        };
+
+        SensorFilter _humidity_filter[N_MODULES];
+        SensorFilter _temperature_filter[N_MODULES];
+        SensorFilter _pressure_filter[N_MODULES];
+        SensorFilter _absolute_humidity_filter[N_MODULES]; // A bit overkill, but it makes sense to have it for consistency
+
+        float _filtered_humidity[N_MODULES] = {0.0f};
+        float _filtered_temperature[N_MODULES] = {0.0f};
+        float _filtered_pressure[N_MODULES] = {0.0f};
+        float _filtered_absolute_humidity[N_MODULES] = {0.0f};
+
+        // Helper function to update running average
+        float update_running_average(SensorFilter &filter, float new_value);
+
+        int get_module_index(uint8_t module) {
+                switch (module) {
+                case internal_sensors_s::MODULE_MAINBRAIN:
+                        return 0;
+                case internal_sensors_s::MODULE_POWER:
+                        return 1;
+                case internal_sensors_s::MODULE_BUOYANCY:
+                        return 2;
+                case internal_sensors_s::MODULE_HYDRAULIC:
+                        return 3;
+                // Add more as needed
+                default:
+                        return -1; // Invalid module
+                }
+        }
 };
