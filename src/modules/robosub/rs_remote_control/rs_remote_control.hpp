@@ -164,5 +164,7 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         uint8_t bitReg = 0;
         uint8_t update1 = 0;
 
+	bool armed = false;
+
 
 };
