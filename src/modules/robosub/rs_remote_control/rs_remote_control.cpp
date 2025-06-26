@@ -208,17 +208,15 @@ void RobosubRemoteControl::taskStat() {
                                 break;
                         }
 
-      _drone_task.timestamp = hrt_absolute_time();
+                        _drone_task.timestamp = hrt_absolute_time();
 
-      _drone_task_pub.publish(_drone_task);
-      drone_task.timestamp = hrt_absolute_time();
-			_vehicle_command_arm.timestamp = hrt_absolute_time();
-			_vehicle_command_arm.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
-			_vehicle_command_arm.param1 = vehicle_command_s::ARMING_ACTION_ARM;
-			_vehicle_command_arm.param2 = 21196; // Some magic number to force the arm command
+                        _vehicle_command_arm.timestamp = hrt_absolute_time();
+                        _vehicle_command_arm.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
+                        _vehicle_command_arm.param1 = vehicle_command_s::ARMING_ACTION_ARM;
+                        _vehicle_command_arm.param2 = 21196; // Some magic number to force the arm command
 
-                        _drone_task_pub.publish(drone_task);
-			_vehicle_command_pub.publish(_vehicle_command_arm);
+                        _drone_task_pub.publish(_drone_task);
+                        _vehicle_command_pub.publish(_vehicle_command_arm);
 
 
                 }
@@ -326,7 +324,7 @@ void RobosubRemoteControl::remote_buoyancy(){
 			// 	_buoyancy_ctrl.states[3] = FILL;
 			// else if(normalized[3] <= THRESHOLD)
 			// 	_buoyancy_ctrl.states[3] = EMPTY;
-			_buoyancy_ctrl_states[3] = KEEP;
+			// _buoyancy_ctrl_states[3] = KEEP;
 
 			_buoyancy_ctrl.timestamp = hrt_absolute_time();
 			_buoyancy_ctrl_pub.publish(_buoyancy_ctrl);
