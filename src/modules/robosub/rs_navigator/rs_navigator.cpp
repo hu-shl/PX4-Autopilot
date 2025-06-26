@@ -254,7 +254,7 @@ void RobosubNavigator::Run()
 		}
 		return;
 	}
-	if (_drone_task.task == drone_task_s::TASK_AUTONOMOUS) {
+	if (_drone_task.task == drone_task_s::TASK_SEARCHBUOY) {
 		if (_vehicle_local_position_sub.update(&local_pos)) {
 			matrix::Vector3f current_pos(local_pos.x, local_pos.y, local_pos.z);
 			float current_heading = local_pos.heading;
