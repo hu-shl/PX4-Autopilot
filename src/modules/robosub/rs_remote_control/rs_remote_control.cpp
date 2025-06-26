@@ -168,37 +168,50 @@ void RobosubRemoteControl::taskStat() {
                 normalized[6] = (rc_data.values[6] - 1500) / 400.0f;
                 normalized[7] = (rc_data.values[7] - 1500) / 400.0f;
 
-                normalized[4] = math::constrain(normalized[4], -range, range);
-                normalized[5] = math::constrain(normalized[5], -range, range);
-                normalized[6] = math::constrain(normalized[6], -range, range);
-                normalized[7] = math::constrain(normalized[7], -range, range);
+                normalized[4] = math::constrain(normalized[4], -1.0f, 1.0f);
+                normalized[5] = math::constrain(normalized[5], -1.0f, 1.0f);
+                normalized[6] = math::constrain(normalized[6], -1.0f, 1.0f);
+                normalized[7] = math::constrain(normalized[7], -1.0f, 1.0f);
 
                 uint8_t stateEnable((normalized[4] > 0.0f) ? 1 : 0);
-
-                drone_task_s drone_task{};
 
                 if (stateEnable == 1) {
                         bitReg = ((normalized[5] > 0.0f) ? 1 : 0) | ((normalized[6] > 0.0f) ? 1 : 0) << 1 |
                                  ((normalized[7] > 0.0f) ? 1 : 0) << 2;
                         switch (bitReg) {
                         case 0b000:
-                                drone_task.task = TASK_INIT;
+                                _drone_task.task = TASK_REMOTECONTROLLED;
                                 break;
                         case 0b001:
-                                drone_task.task = TASK_DEFAULT;
+                                _drone_task.task = TASK_BUOYANCYCTRL;
                                 break;
                         case 0b010:
-                                drone_task.task = TASK_AUTONOMOUS;
+                                _drone_task.task = TASK_DPGOAL;
                                 break;
+			case 0b011:
+				_drone_task.task = TASK_DPTELEARM;
+				break;
+			case 0b100:
+				_drone_task.task = TASK_SEARCHBUOY;
+				break;
+			case 0b101:
+				_drone_task.task = TASK_SEARCHTUBE;
+				break;
+			case 0b110:
+				_drone_task.task = TASK_TASK2;
+				break;
                         case 0b111:
-                                drone_task.task = TASK_REMOTE_CONTROLLED;
+                                _drone_task.task = TASK_TASK1;
                                 break;
                         default:
-
+				_drone_task.task = TASK_REMOTECONTROLLED;
                                 break;
                         }
 
-                        drone_task.timestamp = hrt_absolute_time();
+      _drone_task.timestamp = hrt_absolute_time();
+
+      _drone_task_pub.publish(_drone_task);
+      drone_task.timestamp = hrt_absolute_time();
 			_vehicle_command_arm.timestamp = hrt_absolute_time();
 			_vehicle_command_arm.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
 			_vehicle_command_arm.param1 = vehicle_command_s::ARMING_ACTION_ARM;
@@ -216,7 +229,7 @@ void RobosubRemoteControl::receiver() {
         RobosubMotorControl robosub_motor_control;
 
         if (update1) {
-                if (bitReg == TASK_REMOTE_CONTROLLED) {
+                if (bitReg == TASK_REMOTECONTROLLED) {
                         input_rc_s rc_data{};
                         _input_rc_sub.copy(&rc_data);
 
@@ -242,38 +255,83 @@ void RobosubRemoteControl::receiver() {
                         normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
                         normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
 
-                        // normalized[0] = math::constrain(normalized[0],  -range, range);
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS1,
-                                                            normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS2,
-                                                            normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+                        normalized[0] = math::constrain(normalized[0],  -range, range);
+			normalized[1] = math::constrain(normalized[1],  -range, range);
+			normalized[2] = math::constrain(normalized[2],  -range, range);
+			normalized[3] = math::constrain(normalized[3],  -range, range);
+
+                        robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+                        robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+
                         robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[1], 0, false);
-                        robosub_motor_control.actuator_test(
-                            MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
-                        robosub_motor_control.actuator_test(
-                            MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+                        robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+
                         if (normalized[2] > 0.1f || normalized[2] < -0.1f) {
                                 robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
                                 robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
                         } else {
                                 if (normalized[3] <= 0)
-                                        robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
                                 else if (normalized[3] >= 0) {
-                                        robosub_motor_control.actuator_test(
-                                            MOTOR_UP2,
-                                            (-normalized[3] *
-                                             (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())),
-                                            0, false);
-                                        robosub_motor_control.actuator_test(
-                                            MOTOR_UP3,
-                                            (-normalized[3] *
-                                             (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())),
-                                            0, false);
+                                        robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
+                                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
                                 }
                         }
                 }
                 update1 = 0;
         }
+}
+
+void RobosubRemoteControl::remote_buoyancy(){
+	if (update1) {
+                if (bitReg == TASK_BUOYANCYCTRL) {
+                        input_rc_s rc_data{};
+                        _input_rc_sub.copy(&rc_data);
+
+			normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
+                        normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
+                        normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
+                        // normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
+
+			normalized[0] = math::constrain(normalized[0],  -range, range);
+			normalized[1] = math::constrain(normalized[1],  -range, range);
+			normalized[2] = math::constrain(normalized[2],  -range, range);
+			// normalized[3] = math::constrain(normalized[3],  -range, range);
+
+			if(normalized[0] >= -THRESHOLD && normalized[0] <= THRESHOLD)
+				_buoyancy_ctrl.states[0] = KEEP;
+			else if(normalized[0] >= THRESHOLD)
+				_buoyancy_ctrl.states[0] = FILL;
+			else if(normalized[0] <= THRESHOLD)
+				_buoyancy_ctrl.states[0] = EMPTY;
+
+			if(normalized[1] >= -THRESHOLD && normalized[1] <= THRESHOLD)
+				_buoyancy_ctrl.states[1] = KEEP;
+			else if(normalized[1] >= THRESHOLD)
+				_buoyancy_ctrl.states[1] = FILL;
+			else if(normalized[1] <= THRESHOLD)
+				_buoyancy_ctrl.states[1] = EMPTY;
+
+			if(normalized[2] >= -THRESHOLD && normalized[2] <= THRESHOLD)
+				_buoyancy_ctrl.states[2] = KEEP;
+			else if(normalized[2] >= THRESHOLD)
+				_buoyancy_ctrl.states[2] = FILL;
+			else if(normalized[2] <= THRESHOLD)
+				_buoyancy_ctrl.states[2] = EMPTY;
+
+			// if(normalized[3] >= -THRESHOLD && normalized[3] <= THRESHOLD)
+			// 	_buoyancy_ctrl.states[3] = KEEP;
+			// else if(normalized[3] >= THRESHOLD)
+			// 	_buoyancy_ctrl.states[3] = FILL;
+			// else if(normalized[3] <= THRESHOLD)
+			// 	_buoyancy_ctrl.states[3] = EMPTY;
+			_buoyancy_ctrl_states[3] = KEEP;
+
+			_buoyancy_ctrl.timestamp = hrt_absolute_time();
+			_buoyancy_ctrl_pub.publish(_buoyancy_ctrl);
+		}
+	}
 }
 
 void RobosubRemoteControl::parameters_update(bool force) {
