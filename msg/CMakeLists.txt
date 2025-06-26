@@ -271,6 +271,7 @@ set(msg_files
 	robosub/OpiDetection.msg
 	robosub/ControlLamp.msg
 	robosub/BuoyancyCtrl.msg
+	robosub/Status.msg
 )
 list(SORT msg_files)
 
