@@ -99,6 +99,22 @@ void RobosubNavigator::add_task(const NavTask &task) {
 	}
 }
 
+void RobosubNavigator::push_ahead_task(const NavTask &task) {
+    // Calculate the new head position by moving one step back (circularly)
+    int prev_head = (_task_head - 1 + MAX_TASKS) % MAX_TASKS;
+
+    // Check if the queue is full
+    if (prev_head == _task_tail) {
+        PX4_WARN("Task queue full, cannot push ahead.");
+        return;
+    }
+
+    // Insert the new task at the new head position
+    _task_queue[prev_head] = task;
+    // Update the head to the new position
+    _task_head = prev_head;
+}
+
 void RobosubNavigator::process_task(const matrix::Vector3f &current_pos, const float &current_heading) {
     if (_task_head == _task_tail) {
         // No tasks
@@ -163,6 +179,12 @@ void RobosubNavigator::send_heading_setpoint(const float &heading) {
 	setpoint.yaw = heading;
 
 	trajectory_setpoint_pub.publish(setpoint);
+}
+
+void RobosubNavigator::send_setpoint(const trajectory_setpoint_s &setpoint) {
+    trajectory_setpoint_s new_setpoint = setpoint;
+    new_setpoint.timestamp = hrt_absolute_time();
+    trajectory_setpoint_pub.publish(new_setpoint);
 }
 
 void RobosubNavigator::send_emergency_stop(bool up) {
@@ -249,17 +271,18 @@ void RobosubNavigator::buoy_task_execution(void)
 
 		switch(opi_task) {
 			case TASK_UPDOWN:
-				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, 0.5f), 0});
-				add_task({NavTaskType::WAIT, {}, 0.5f});
-				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, -0.5f), 0});
-				add_task({NavTaskType::WAIT, {}, 0.5f});
+				push_ahead_task({NavTaskType::WAIT, {}, 0.5f});
+				push_ahead_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, -0.5f), 0});
+				push_ahead_task({NavTaskType::WAIT, {}, 0.5f});
+				push_ahead_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, 0.5f), 0});
 				break;
 
 			case TASK_DOWNUP:
-				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, -0.5f), 0});
-				add_task({NavTaskType::WAIT, {}, 0.5f});
-				add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, 0.5f), 0});
-				add_task({NavTaskType::WAIT, {}, 0.5f});
+				push_ahead_task({NavTaskType::WAIT, {}, 0.5f});
+				push_ahead_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, 0.5f), 0});
+				push_ahead_task({NavTaskType::WAIT, {}, 0.5f});
+				push_ahead_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(0.f, 0.f, -0.5f), 0});
+
 				break;
 
 			case TASK_CLKCIRCLE:
@@ -304,7 +327,7 @@ void RobosubNavigator::buoy_task_circle(uint8_t direction)
 
 		float opi_circumference = 2 * M_PI * TARGETDISTANCE;
 
-		add_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(opi_circumference, 0.f, 0.f), 0}); // Start at the target distance
+		push_ahead_task({NavTaskType::MOVE_XYZ, matrix::Vector3f(opi_circumference, 0.f, 0.f), 0}); // Start at the target distance
 	}
 
 	hrt_abstime now = hrt_absolute_time();  // current time in microseconds
@@ -314,8 +337,12 @@ void RobosubNavigator::buoy_task_circle(uint8_t direction)
 	_opi_circle_yaw.update(_opi_detection.heading, dt);
 	_opi_circle_distance.update(_opi_detection.distance, dt);
 
-	send_heading_setpoint(_opi_circle_yaw.getOutput() * direction); // Apply direction to the yaw output
-	send_position_setpoint(matrix::Vector3f(0.f, _opi_circle_distance.getOutput(), 0.f)); // Set position based on the distance
+	trajectory_setpoint_s setpoint{};
+	setpoint.jaw = _opi_circle_yaw.getOutput() * direction; // Apply direction to the yaw output
+	setpoint.position[0] = 0.f; // X position is not used in this context
+	setpoint.position[1] = _opi_circle_distance.getOutput(); // Y position is set based on the distance
+	setpoint.position[2] = 0.f; // Z position
+	send_setpoint(setpoint);
 }
 
 void RobosubNavigator::Run()

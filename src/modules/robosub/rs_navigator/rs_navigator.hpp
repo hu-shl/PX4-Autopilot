@@ -124,7 +124,7 @@
 	};
 
 	uint8_t opi_task = 0;
-	static constexpr int MAX_TASKS = 8;
+	static constexpr int MAX_TASKS = 25;
 	NavTask _task_queue[MAX_TASKS];
 	int _task_head = 0;
 	int _task_tail = 0;
@@ -136,6 +136,7 @@
 
 	void process_task(const matrix::Vector3f &current_pos, const float &heading);
 	void add_task(const NavTask &task);
+	void push_ahead_task(const NavTask &task);
 
 	uORB::Publication<trajectory_setpoint_s> trajectory_setpoint_pub{ORB_ID(trajectory_setpoint)};
 	uORB::SubscriptionCallbackWorkItem _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
@@ -178,6 +179,7 @@
 	void send_emergency_stop(bool up = false);
 	bool status_safe = true;
 	hrt_abstime status_emergency_start = 0;
+	void send_setpoint(const trajectory_setpoint_s &setpoint);
 
 
 
