@@ -92,19 +92,39 @@ param set-default CA_ROTOR6_PX 0
 param set-default CA_ROTOR6_PY -0.8
 param set-default CA_ROTOR6_PZ 0
 
-param set-default PWM_AUX_OUT 1234567  # Enable channels 1-7 for PWM
-param set-default PWM_AUX_RATE 400     # Set PWM frequency to 400 Hz
-param set-default PWM_AUX_DISARM 1500  # Stop neutral when disarmed
-param set-default PWM_AUX_MIN 1100     # Minimum PWM value full reverse
-param set-default PWM_AUX_MAX 1900     # Maximum PWM value full forward
-
-param set-default PWM_AUX_FUNC1 101
-param set-default PWM_AUX_FUNC2 102
-param set-default PWM_AUX_FUNC3 103
-param set-default PWM_AUX_FUNC4 104
-param set-default PWM_AUX_FUNC5 105
-param set-default PWM_AUX_FUNC6 106
-param set-default PWM_AUX_FUNC7 107
+# param set-default PWM_AUX_OUT 1234567  # Enable channels 1-7 for PWM
+param set-default PWM_MAIN_TIM0 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_TIM1 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_TIM2 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_TIM3 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_DIS0 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN0 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX0 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS1 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN1 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX1 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS2 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN2 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX2 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS3 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN3 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX3 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS4 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN4 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX4 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS5 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN5 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX5 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS6 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN6 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX6 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_FUNC1 101
+param set-default PWM_MAIN_FUNC2 102
+param set-default PWM_MAIN_FUNC3 103
+param set-default PWM_MAIN_FUNC4 104
+param set-default PWM_MAIN_FUNC5 105
+param set-default PWM_MAIN_FUNC6 106
+param set-default PWM_MAIN_FUNC7 107
 
 param set-default EKF2_EV_CTRL 4
 
