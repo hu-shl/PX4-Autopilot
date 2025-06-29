@@ -163,6 +163,7 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         float range = 1.0f;
         uint8_t bitReg = 0;
         uint8_t update1 = 0;
+	bool armed = false;
 
 
 };
