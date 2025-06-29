@@ -55,6 +55,15 @@
 #include <uORB/topics/water_detection.h>
 #include <uORB/topics/esc_status.h>
 
+
+// CANFD Client ID destination defines
+#define CLIENT_ID_DEST_PRESSURE      0x00
+#define CLIENT_ID_DEST_HUMIDITY      0x01
+#define CLIENT_ID_DEST_TEMPERATURE   0x02
+#define CLIENT_ID_DEST_WATER         0x04
+#define CLIENT_ID_DEST_ULTRASONIC    0x06
+#define CLIENT_ID_DEST_ESC           0x0A
+
 using namespace time_literals;
 
 extern "C" __EXPORT int rs_canfd_receiver_main(int argc, char *argv[]);

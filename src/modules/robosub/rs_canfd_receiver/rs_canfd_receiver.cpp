@@ -155,62 +155,57 @@ void RoboSubCANFDReceiver::Run() {
 
         if (received_id.can_id_seg.module_id_des == PIXHAWK || received_id.can_id_seg.module_id_des == GLOBAL ) { // Check if the dest module is 0x01 (Pixhawk)
                 switch (received_id.can_id_seg.client_id_des) {  // switch on the client id source
-                case 0x00:                                       // Internal pressure sensor
-                case 0x01:                                       // Internal humidity sensor
-                case 0x02: {                                     // Internal temperature sensor
-                        // TODO: Add check to see if theres enough data in the raw canfd data.
-			converter conv;
-			if (_raw_canfd_msg.len == sizeof(conv.bytes)) {
-				memcpy(conv.bytes, _raw_canfd_msg.data, sizeof(conv.bytes));
+		case CLIENT_ID_DEST_PRESSURE:        // 0x00: Internal pressure sensor
+		case CLIENT_ID_DEST_HUMIDITY:        // 0x01: Internal humidity sensor
+		case CLIENT_ID_DEST_TEMPERATURE: {   // 0x02: Internal temperature sensor
+				// TODO: Add check to see if theres enough data in the raw canfd data.
+				converter conv;
+				if (_raw_canfd_msg.len == sizeof(conv.bytes)) {
+						memcpy(conv.bytes, _raw_canfd_msg.data, sizeof(conv.bytes));
 
-				internal_sensors_s internal_sensor_msg{};            // create the temp message struct
-				internal_sensor_msg.timestamp = hrt_absolute_time(); // set the timestamp
-				internal_sensor_msg.module = received_id.can_id_seg.module_id_src; // set the module id
-				internal_sensor_msg.sensor = received_id.can_id_seg.client_id_des; // set the sensor id
-				internal_sensor_msg.value = conv.value;                            // set the value
+						internal_sensors_s internal_sensor_msg{};
+						internal_sensor_msg.timestamp = hrt_absolute_time();
+						internal_sensor_msg.module = received_id.can_id_seg.module_id_src;
+						internal_sensor_msg.sensor = received_id.can_id_seg.client_id_des;
+						internal_sensor_msg.value = conv.value;
 
-				internal_sensors_pub.publish(internal_sensor_msg); // publish the data
-			}
-			else {
-				PX4_ERR("Received internal sensor data with incorrect length: %d, expected: %zu",
-					_raw_canfd_msg.len, sizeof(conv.bytes));
-				}
-                        break;
-                }
-                case 0x04: {                                                 // LP4 GPIO non contact water level
-                        water_detection_msg.timestamp = hrt_absolute_time(); // set the timestamp
-                        if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
-                                water_detection_msg.mainbrain_sensor =
-                                    _raw_canfd_msg.data[0]; // set the water detected bit, this should be the first byte
-                        } else if (received_id.can_id_seg.module_id_src == POWER) {
-                                water_detection_msg.power_module_sensor =
-                                    _raw_canfd_msg.data[0]; // set the water detected bit, this should be the first byte
-                        }
-                        water_detection_pub.publish(water_detection_msg); // publish the data
-                        break;
-                }
-		case 0x06: { // Ultrasonic distance sensor (bow-side)
-			if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
-				uint8_t distance_mm = _raw_canfd_msg.data[0]; // Corrected type
-				float distance_m = distance_mm / 1000.f;
-                                _px4_rangefinder_bow.update(hrt_absolute_time(), distance_m); // update range finder
-                        }
-                        break;
-                }
-                case 0x0A: { // ClientID Thruster ESC telemetery
-                        if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
-				if (_raw_canfd_msg.len == sizeof(esc_telem.payload)) { // Check if the length of the data is correct
-					memcpy(esc_telem.payload, _raw_canfd_msg.data,
-					sizeof(esc_telem.payload)); // Put the received data in union
-                                	send_esc_status(&esc_telem);
+						internal_sensors_pub.publish(internal_sensor_msg);
 				} else {
-					PX4_ERR("Received ESC telemetry with incorrect length: %d, expected: %zu",
-						_raw_canfd_msg.len, sizeof(esc_telem.payload));
-					}
-                        }
-                }
-                }
-        } else { // if the hardware filters are set up correctly, this should never happen
+						PX4_ERR("Received internal sensor data with incorrect length: %d, expected: %zu",
+								_raw_canfd_msg.len, sizeof(conv.bytes));
+				}
+				break;
+		}
+		case CLIENT_ID_DEST_WATER: { // 0x04: LP4 GPIO non contact water level
+				water_detection_msg.timestamp = hrt_absolute_time();
+				if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
+						water_detection_msg.mainbrain_sensor = _raw_canfd_msg.data[0];
+				} else if (received_id.can_id_seg.module_id_src == POWER) {
+						water_detection_msg.power_module_sensor = _raw_canfd_msg.data[0];
+				}
+				water_detection_pub.publish(water_detection_msg);
+				break;
+		}
+		case CLIENT_ID_DEST_ULTRASONIC: { // 0x06: Ultrasonic distance sensor (bow-side)
+				if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
+						uint8_t distance_mm = _raw_canfd_msg.data[0];
+						float distance_m = distance_mm / 1000.f;
+						_px4_rangefinder_bow.update(hrt_absolute_time(), distance_m);
+				}
+				break;
+		}
+		case CLIENT_ID_DEST_ESC: { // 0x0A: Thruster ESC telemetry
+				if (received_id.can_id_seg.module_id_src == MAINBRAIN) {
+						if (_raw_canfd_msg.len == sizeof(esc_telem.payload)) {
+								memcpy(esc_telem.payload, _raw_canfd_msg.data, sizeof(esc_telem.payload));
+								send_esc_status(&esc_telem);
+						} else {
+								PX4_ERR("Received ESC telemetry with incorrect length: %d, expected: %zu",
+										_raw_canfd_msg.len, sizeof(esc_telem.payload));
+						}
+				}
+				break;
+		}
                 PX4_ERR("Received message from unknown source: module_id_src=%lu, client_id_src=%lu, module_id_des=%lu, client_id_des=%lu",
                         (unsigned long)received_id.can_id_seg.module_id_src,
                         (unsigned long)received_id.can_id_seg.client_id_src,
