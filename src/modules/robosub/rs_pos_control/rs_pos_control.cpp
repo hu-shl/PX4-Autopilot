@@ -33,12 +33,12 @@
 
 /**
  *
- * This modules takes in the Control from both the manual and auto control
- * setpoints and applies the PID control to the motors. PID output is published
- * as a thrust- and torque setpoint, used by the thruster control module.
+ * This module takes in setpoints frrom different topics (e.g. trajectory_setpoint) and converts them to
+ * thrust and torque setpoints for the vehicle. this is done with Casecade PID controllers per axis.
+ * Support for the buoyancy system needs to be added.
  *
  * @author Daan Smienk <daan@daansmienk.nl>
- * @author Thijs Vader <thijs.vader@student.hu.nl>
+ * @author Thijs Vader <thijsvader@outlook.com>
  */
 
 #include "rs_pos_control.hpp"

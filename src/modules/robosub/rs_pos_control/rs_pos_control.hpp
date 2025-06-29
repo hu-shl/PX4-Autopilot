@@ -59,19 +59,21 @@
 #include <uORB/topics/parameter_update.h>
 
 // Setpoints
-#include <uORB/topics/trajectory_setpoint.h>                // used for Vision AI model                // drone task subscription
+#include <uORB/topics/trajectory_setpoint.h>        // setpoints from navigation module
+// add other topics when other sources are needed
+
+// Drone status
+#include <uORB/topics/drone_task.h>                 // current drone task (search buoy, search tube, etc.)
+#include <uORB/topics/status.h>                     // current status of drone (critical battery, low battery, etc.)
 
 // Current data
-#include <uORB/topics/drone_task.h>
-#include <uORB/topics/status.h>
-
 #include <uORB/topics/vehicle_local_position.h>     // position and velocity for x, y and z
 #include <uORB/topics/vehicle_attitude.h>           // position for roll, pitch and yaw
 #include <uORB/topics/vehicle_angular_velocity.h>   // velocity for roll, pitch and yaw
 
 // Publications
-#include <uORB/topics/vehicle_thrust_setpoint.h>    // vehicle thrust setpoint publication
-#include <uORB/topics/vehicle_torque_setpoint.h>    // vehicle torque setpoint publication
+#include <uORB/topics/vehicle_thrust_setpoint.h>    // vehicle thrust setpoint publication (x, y and z)
+#include <uORB/topics/vehicle_torque_setpoint.h>    // vehicle torque setpoint publication (roll, pitch and yaw)
 
 #include <uORB/uORB.h>
 
