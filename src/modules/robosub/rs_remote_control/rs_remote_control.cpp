@@ -239,6 +239,8 @@ void RobosubRemoteControl::receiver() {
                                 sensor_power = _water_detection.power_module_sensor;
                         }
 
+			sensor_mainbrain = true; // Needed for rami-2025
+
                         if (!sensor_mainbrain && !sensor_power) {
                                 range = 0.2f;
 
@@ -247,6 +249,8 @@ void RobosubRemoteControl::receiver() {
 
                         } else if (sensor_mainbrain && sensor_power) {
                                 range = 1.0f;
+                        } else if (!sensor_power){ // Needed for rami-2025 because we don't have the sensor in the mainbrain
+                                range = 0.2f;
                         }
                         // range = 1.0f; // Disable safety water detection force range to 100 perc
 

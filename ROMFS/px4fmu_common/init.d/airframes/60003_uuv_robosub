@@ -139,12 +139,12 @@ param set-default BAT1_SOURCE 0
 
 rs_motor_control start
 rs_remote_control start
-control_allocator start
+# control_allocator start # disabled for RAMI-2025
 land_detector start rover
 
 rs_canfd_socket start
 rs_canfd_receiver start
 rs_canfd_sender start
 
-rs_pos_control start
-rs_status_monitor start
+# rs_pos_control start # disabled for RAMI-2025
+# rs_status_monitor start # disabled for RAMI-2025
