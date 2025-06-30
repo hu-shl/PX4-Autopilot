@@ -252,40 +252,35 @@ void RobosubRemoteControl::receiver() {
                         } else if (!sensor_power){ // Needed for rami-2025 because we don't have the sensor in the mainbrain
                                 range = 0.2f;
                         }
-                        // range = 1.0f; // Disable safety water detection force range to 100 perc
 
                         // Normalize the rc data to a value between -1 and 1
-                        normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
-                        normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
-                        normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
+                        normalized[0] = (rc_data.values[1] - 1500) / 400.0f; // thrust y
+                        normalized[1] = (rc_data.values[2] - 1500) / 400.0f; // thrust in z
+                        normalized[2] = (rc_data.values[3] - 1500) / 400.0f; //
                         normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
 
-                        normalized[0] = math::constrain(normalized[0],  -range, range);
-			normalized[1] = math::constrain(normalized[1],  -range, range);
-			normalized[2] = math::constrain(normalized[2],  -range, range);
-			normalized[3] = math::constrain(normalized[3],  -range, range);
+			constrain_actuator_commands(0, 0, 0, 0, 0, 0, range);
+			publish_thrust_setpoint();
+			publish_torque_setpoint();
 
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
 
-                        robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[1], 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[1], 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
 
-                        if (normalized[2] > 0.1f || normalized[2] < -0.1f) {
-                                robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
-                                robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
-                        } else {
-                                if (normalized[3] <= 0)
-				robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
-                                else if (normalized[3] >= 0) {
-                                        robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
-                                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
-                                }
-                        }
-			// constrain_actuator_commands
-			// publish_torque_setpoint
-			// publish_force_setpoint
+                        // if (normalized[2] > 0.1f || normalized[2] < -0.1f) {
+                        //         robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
+                        //         robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
+                        // } else {
+                        //         if (normalized[3] <= 0)
+			// 	robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
+                        //         else if (normalized[3] >= 0) {
+                        //                 robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
+                        //                 robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
+                        //         }
+                        // }
                 }
                 update1 = 0;
         }
@@ -298,37 +293,37 @@ void RobosubRemoteControl::receiver() {
  * @param pitch_u float
  */
 void RobosubRemoteControl::constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
-                                                    float thrust_y, float thrust_z) {
+                                                    float thrust_y, float thrust_z, float range) {
         if (PX4_ISFINITE(roll_u)) {
-                roll_u = math::constrain(roll_u, -1.0f, 1.0f);
-                _vehicle_torque_setpoint.xyz[0] = roll_u;
+                roll_u = math::constrain(roll_u, -range, range);
+                vehicle_torque_setpoint.xyz[0] = roll_u;
 
         } else {
-                _vehicle_torque_setpoint.xyz[0] = 0.0f;
+                vehicle_torque_setpoint.xyz[0] = 0.0f;
         }
 
         if (PX4_ISFINITE(pitch_u)) {
-                pitch_u = math::constrain(pitch_u, -1.0f, 1.0f);
-                _vehicle_torque_setpoint.xyz[1] = pitch_u;
+                pitch_u = math::constrain(pitch_u, -range, range);
+                vehicle_torque_setpoint.xyz[1] = pitch_u;
 
         } else {
-                _vehicle_torque_setpoint.xyz[1] = 0.0f;
+                vehicle_torque_setpoint.xyz[1] = 0.0f;
         }
 
         if (PX4_ISFINITE(yaw_u)) {
-                yaw_u = math::constrain(yaw_u, -1.0f, 1.0f);
-                _vehicle_torque_setpoint.xyz[2] = yaw_u;
+                yaw_u = math::constrain(yaw_u, -range, range);
+                vehicle_torque_setpoint.xyz[2] = yaw_u;
 
         } else {
-                _vehicle_torque_setpoint.xyz[2] = 0.0f;
+                vehicle_torque_setpoint.xyz[2] = 0.0f;
         }
 
         if (PX4_ISFINITE(thrust_x)) {
-                thrust_x = math::constrain(thrust_x, -1.0f, 1.0f);
-                _vehicle_thrust_setpoint.xyz[0] = thrust_x;
+                thrust_x = math::constrain(thrust_x, -range, range);
+                vehicle_thrust_setpoint.xyz[0] = thrust_x;
 
         } else {
-                _vehicle_thrust_setpoint.xyz[0] = 0.0f;
+                vehicle_thrust_setpoint.xyz[0] = 0.0f;
         }
 }
 
@@ -394,7 +389,7 @@ void RobosubRemoteControl::remote_buoyancy(){
 //                                                 const float thrust_z)
 void RobosubRemoteControl::publish_thrust_setpoint(void)
 {
-        vehicle_thrust_setpoint_s vehicle_thrust_setpoint = {};
+        // vehicle_thrust_setpoint_s vehicle_thrust_setpoint = {};
         vehicle_thrust_setpoint.timestamp = hrt_absolute_time();
 
         // vehicle_thrust_setpoint.xyz[0] = thrust_x;

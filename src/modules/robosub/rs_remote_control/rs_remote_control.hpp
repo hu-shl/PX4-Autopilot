@@ -137,7 +137,7 @@ extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
         void publish_torque_setpoint(void);
 
 	void constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
-                                                    float thrust_y, float thrust_z);
+                                                    float thrust_y, float thrust_z, float range);
 
         DEFINE_PARAMETERS(
                           (ParamFloat<px4::params::UP_MOTOR_RED>)_param_front_up_motor_reduction,
@@ -166,6 +166,12 @@ extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
         input_rc_s _input_rc{};
 	status_s _status_msg{};
 	vehicle_command_s _vehicle_command_arm{};
+
+        // Define publication variables
+        vehicle_thrust_setpoint_s
+            vehicle_thrust_setpoint{}; // vehicle thrust setpoint
+        vehicle_torque_setpoint_s
+            vehicle_torque_setpoint{}; // vehicle torque setpoint
 
         float normalized[8];
         float range = 1.0f;
