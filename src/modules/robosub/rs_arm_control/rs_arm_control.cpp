@@ -58,62 +58,70 @@ RobosubArmControl::~RobosubArmControl() {
 void RobosubArmControl::Run() {
 	perf_begin(_loop_perf);
 
-	teleoperated_arm();
+	if(_drone_task_sub.update(&_drone_task));
+	{
+		_drone_task_sub.copy(&_drone_task);
+		teleoperated_arm();
+	}
+
 
 	perf_end(_loop_perf);
 }
 
 void RobosubArmControl::teleoperated_arm() {
-	if (_input_rc_sub.update(&_input_rc)) {
-		_input_rc_sub.copy(&_input_rc);
+	if(_drone_task.task = TELEARM)
+	{
+		if (_input_rc_sub.update(&_input_rc)) {
+			_input_rc_sub.copy(&_input_rc);
 
-		normalized[0] = (_input_rc.values[1] - 1500) / 400.0f;
-		normalized[1] = (_input_rc.values[2] - 1500) / 400.0f;
-		normalized[2] = (_input_rc.values[3] - 1500) / 400.0f;
-		normalized[3] = (_input_rc.values[0] - 1500) / 400.0f;
+			normalized[0] = (_input_rc.values[1] - 1500) / 400.0f;
+			normalized[1] = (_input_rc.values[2] - 1500) / 400.0f;
+			normalized[2] = (_input_rc.values[3] - 1500) / 400.0f;
+			normalized[3] = (_input_rc.values[0] - 1500) / 400.0f;
 
-		for (int i = 0; i < 4; i++) {
-			normalized[i] = math::constrain(normalized[i], -1.0f, 1.0f);
-		}
+			for (int i = 0; i < 4; i++) {
+				normalized[i] = math::constrain(normalized[i], -1.0f, 1.0f);
+			}
 
-		if (fabsf(normalized[0]) < THRESHOLD)
-			istates[SEG1] = HOLD;
-		else if (normalized[0] < 0)
-			istates[SEG1] = EXTEND;
-		else
-			istates[SEG1] = CONTRACT;
-
-		if (fabsf(normalized[1]) < THRESHOLD)
-			istates[SEG2] = HOLD;
-		else if (normalized[1] < 0)
-			istates[SEG2] = EXTEND;
-		else
-			istates[SEG2] = CONTRACT;
-
-		if (normalized[2] < -THRESHOLD) {
-			if (normalized[2] >= -0.45f)
-				istates[BASE] = CONTRACT;
+			if (fabsf(normalized[0]) < THRESHOLD)
+				istates[SEG1] = HOLD;
+			else if (normalized[0] < 0)
+				istates[SEG1] = EXTEND;
 			else
-				istates[BASE] = EXTEND;
-		} else if (normalized[2] > THRESHOLD) {
-			istates[GRIP] = EXTEND;
-		} else {
-			istates[BASE] = HOLD;
-			istates[GRIP] = HOLD;
+				istates[SEG1] = CONTRACT;
+
+			if (fabsf(normalized[1]) < THRESHOLD)
+				istates[SEG2] = HOLD;
+			else if (normalized[1] < 0)
+				istates[SEG2] = EXTEND;
+			else
+				istates[SEG2] = CONTRACT;
+
+			if (normalized[2] < -THRESHOLD) {
+				if (normalized[2] >= -0.45f)
+					istates[BASE] = CONTRACT;
+				else
+					istates[BASE] = EXTEND;
+			} else if (normalized[2] > THRESHOLD) {
+				istates[GRIP] = EXTEND;
+			} else {
+				istates[BASE] = HOLD;
+				istates[GRIP] = HOLD;
+			}
+
+			if (fabsf(normalized[3]) < THRESHOLD)
+				istates[SEG3] = HOLD;
+			else if (normalized[3] < 0)
+				istates[SEG3] = EXTEND;
+			else
+				istates[SEG3] = CONTRACT;
+
+			_arm_ctrl.timestamp = hrt_absolute_time();
+
+			memcpy(_arm_ctrl.states, istates, 6);
+
+			_arm_ctrl_pub.publish(_arm_ctrl);
 		}
-
-		if (fabsf(normalized[3]) < THRESHOLD)
-			istates[SEG3] = HOLD;
-		else if (normalized[3] < 0)
-			istates[SEG3] = EXTEND;
-		else
-			istates[SEG3] = CONTRACT;
-
-		_arm_ctrl.timestamp = hrt_absolute_time();
-
-		memcpy(_arm_ctrl.states, istates, 6);
-
-		_arm_ctrl_pub.publish(_arm_ctrl);
 	}
 }
 

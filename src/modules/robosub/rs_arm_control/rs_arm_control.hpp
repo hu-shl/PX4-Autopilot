@@ -42,6 +42,7 @@
  #include <uORB/topics/parameter_update.h>
  #include <uORB/topics/input_rc.h>
  #include <uORB/topics/arm_ctrl.h>
+ #include <uORB/topics/drone_task.h>
  #include <lib/perf/perf_counter.h>
 
  using namespace time_literals;
@@ -84,6 +85,7 @@
 	 #define HOLD 0
 	 #define EXTEND 1
 	 #define CONTRACT 2
+	 #define TELEARM 3
 
 	 perf_counter_t _loop_perf;
 
@@ -122,6 +124,8 @@
 	 // Subscriptions
 	 uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
 	 uORB::SubscriptionCallbackWorkItem 	_input_rc_sub{this, ORB_ID(input_rc)};
+	 uORB::Subscription _drone_task_sub{ORB_ID(drone_task)};
+	 drone_task_s _drone_task{};
 	 input_rc_s _input_rc{};
 
  };
