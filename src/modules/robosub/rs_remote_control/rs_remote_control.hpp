@@ -59,8 +59,8 @@ extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
  {
  public:
 
-        #define TASK_REMOTECONTROLLED  0b000
-        #define TASK_BUOYANCYCTRL       0b001
+        #define TASK_REMOTECONTROLLED   0b000
+        #define TASK_RC_PID             0b001
         #define TASK_DPGOAL             0b010
         #define TASK_DPTELEARM          0b011
         #define TASK_SEARCHBUOY         0b100
@@ -132,12 +132,18 @@ extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
 
         void parameters_update(bool force = false);
 
+        /** @brief constrain actuator torque and thrust setpoint btwn -1 and 1 */
+	void constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
+                                                    float thrust_y, float thrust_z);
+
+	/** @brief Apply water safety */
+	void apply_water_safety(float &p_roll_u, float &p_pitch_u, float &p_yaw_u, float &p_thrust_x,
+                                           float &p_thrust_y, float &p_thrust_z);
+
+
         void publish_thrust_setpoint(void);
 
         void publish_torque_setpoint(void);
-
-	void constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
-                                                    float thrust_y, float thrust_z, float range);
 
         DEFINE_PARAMETERS(
                           (ParamFloat<px4::params::UP_MOTOR_RED>)_param_front_up_motor_reduction,
@@ -174,9 +180,8 @@ extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
             vehicle_torque_setpoint{}; // vehicle torque setpoint
 
         float normalized[8];
-        float range = 1.0f;
         uint8_t bitReg = 0;
         uint8_t update1 = 0;
-
+	bool armed = false;
 
 };
