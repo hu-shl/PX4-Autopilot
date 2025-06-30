@@ -279,8 +279,52 @@ void RobosubRemoteControl::receiver() {
                                         robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
                                 }
                         }
+			// constrain_actuator_commands
+			// publish_torque_setpoint
+			// publish_force_setpoint
                 }
                 update1 = 0;
+        }
+}
+
+/**
+ * @brief constrains values and put setpoint
+ *
+ * Borrow from UUVAttitudeControl::constrain_actuator_commands
+ * @param pitch_u float
+ */
+void RobosubRemoteControl::constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
+                                                    float thrust_y, float thrust_z) {
+        if (PX4_ISFINITE(roll_u)) {
+                roll_u = math::constrain(roll_u, -1.0f, 1.0f);
+                _vehicle_torque_setpoint.xyz[0] = roll_u;
+
+        } else {
+                _vehicle_torque_setpoint.xyz[0] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(pitch_u)) {
+                pitch_u = math::constrain(pitch_u, -1.0f, 1.0f);
+                _vehicle_torque_setpoint.xyz[1] = pitch_u;
+
+        } else {
+                _vehicle_torque_setpoint.xyz[1] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(yaw_u)) {
+                yaw_u = math::constrain(yaw_u, -1.0f, 1.0f);
+                _vehicle_torque_setpoint.xyz[2] = yaw_u;
+
+        } else {
+                _vehicle_torque_setpoint.xyz[2] = 0.0f;
+        }
+
+        if (PX4_ISFINITE(thrust_x)) {
+                thrust_x = math::constrain(thrust_x, -1.0f, 1.0f);
+                _vehicle_thrust_setpoint.xyz[0] = thrust_x;
+
+        } else {
+                _vehicle_thrust_setpoint.xyz[0] = 0.0f;
         }
 }
 
@@ -333,6 +377,48 @@ void RobosubRemoteControl::remote_buoyancy(){
 			_buoyancy_ctrl_pub.publish(_buoyancy_ctrl);
 		}
 	}
+}
+
+/**
+ * @brief Publish the thrust setpoint
+ *  @param thrust_x The thrust setpoint in the x direction
+ *  @param thrust_y The thrust setpoint in the y direction
+ *  @param thrust_z The thrust setpoint in the z direction
+ */
+// void RobosubRemoteControl::publish_thrust_setpoint(const float thrust_x,
+//                                                 const float thrust_y,
+//                                                 const float thrust_z)
+void RobosubRemoteControl::publish_thrust_setpoint(void)
+{
+        vehicle_thrust_setpoint_s vehicle_thrust_setpoint = {};
+        vehicle_thrust_setpoint.timestamp = hrt_absolute_time();
+
+        // vehicle_thrust_setpoint.xyz[0] = thrust_x;
+        // vehicle_thrust_setpoint.xyz[1] = thrust_y;
+        // vehicle_thrust_setpoint.xyz[2] = thrust_z;
+
+        _thrust_setpoint_pub.publish(vehicle_thrust_setpoint);
+}
+
+/**
+ * @brief Publish the attitude setpoint
+ *  @param roll The roll setpoint
+ *  @param pitch The pitch setpoint
+ *  @param yaw The yaw setpoint
+ */
+// void RobosubRemoteControl::publish_torque_setpoint(const float torque_roll,
+//                                                 const float torque_pitch,
+//                                                 const float torque_yaw)
+void RobosubRemoteControl::publish_thrust_setpoint(void)
+{
+        vehicle_torque_setpoint_s vehicle_torque_setpoint = {};
+        vehicle_torque_setpoint.timestamp = hrt_absolute_time();
+
+        vehicle_torque_setpoint.xyz[0] = torque_roll;
+        vehicle_torque_setpoint.xyz[1] = torque_pitch;
+        vehicle_torque_setpoint.xyz[2] = torque_yaw;
+
+        _torque_setpoint_pub.publish(vehicle_torque_setpoint);
 }
 
 void RobosubRemoteControl::parameters_update(bool force) {

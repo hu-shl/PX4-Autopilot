@@ -45,18 +45,29 @@
 #include <uORB/topics/input_rc.h>
 #include <uORB/topics/water_detection.h>
 #include <uORB/topics/drone_task.h>
-#include <uORB/topics/buoyancy_ctrl.h>
 #include <uORB/topics/status.h>
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/vehicle_thrust_setpoint.h>    // vehicle thrust setpoint publication
+#include <uORB/topics/vehicle_torque_setpoint.h>    // vehicle torque setpoint publication
+
 
 using namespace time_literals;
 
 extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
 
-class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
-                             public ModuleParams,
-                             public px4::ScheduledWorkItem {
-      public:
+ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,  public ModuleParams, public px4::ScheduledWorkItem
+ {
+ public:
+
+        #define TASK_REMOTECONTROLLED  0b000
+        #define TASK_BUOYANCYCTRL       0b001
+        #define TASK_DPGOAL             0b010
+        #define TASK_DPTELEARM          0b011
+        #define TASK_SEARCHBUOY         0b100
+        #define TASK_SEARCHTUBE         0b101
+        #define TASK_TASK2              0b110
+        #define TASK_TASK1              0b111
+
 
         enum MotorID {
                 MOTOR_FORWARDS1 = 101,
@@ -67,15 +78,6 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
                 MOTOR_SIDE1 = 105,
                 MOTOR_SIDE2 = 107
         };
-
-	#define TASK_REMOTECONTROLLED 	0b000
-	#define TASK_BUOYANCYCTRL 	0b001
-	#define TASK_DPGOAL 		0b010
-	#define TASK_DPTELEARM 		0b011
-	#define TASK_SEARCHBUOY 	0b100
-	#define TASK_SEARCHTUBE 	0b101
-	#define TASK_TASK2 		0b110
-	#define TASK_TASK1 		0b111
 
         RobosubRemoteControl();
         ~RobosubRemoteControl();
@@ -107,7 +109,6 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 
          */
 
-
         perf_counter_t _loop_perf;
 
         uORB::Subscription _water_detection_sub{ORB_ID(water_detection)};
@@ -118,11 +119,6 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         water_detection_s _water_detection{};
         water_detection_s water_detection_msg{}; // create the temp message struct
 
-	#define THRESHOLD 0.2f
-	#define KEEP 	0
-	#define FILL 	1
-	#define EMPTY 	2
-
         float outputT200 = 0.0f;
         float kP = 1.0f;
         float kI = 1.0f;
@@ -130,11 +126,18 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 
         void taskStat();
 
-	void remote_buoyancy();
 	bool status_safe = true;
 	hrt_abstime status_emergency_start = 0;
 
+
         void parameters_update(bool force = false);
+
+        void publish_thrust_setpoint(void);
+
+        void publish_torque_setpoint(void);
+
+	void constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
+                                                    float thrust_y, float thrust_z);
 
         DEFINE_PARAMETERS(
                           (ParamFloat<px4::params::UP_MOTOR_RED>)_param_front_up_motor_reduction,
@@ -143,19 +146,24 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 			)
 
         // Subscriptions
-        uORB::SubscriptionInterval 		_parameter_update_sub{ORB_ID(parameter_update), 1_s};
-        uORB::SubscriptionCallbackWorkItem 	_input_rc_sub{this, ORB_ID(input_rc)};
-
-        uORB::Publication<drone_task_s> 	_drone_task_pub{ORB_ID(drone_task)};
-	uORB::Publication<buoyancy_ctrl_s> 	_buoyancy_ctrl_pub{ORB_ID(buoyancy_ctrl)};
-
-        drone_task_s 	_drone_task{};
-	buoyancy_ctrl_s _buoyancy_ctrl{};
-        input_rc_s 	_input_rc{};
+        uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+        uORB::SubscriptionCallbackWorkItem _input_rc_sub{this, ORB_ID(input_rc)};
 	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
 
+        uORB::Publication<drone_task_s> _drone_task_pub{ORB_ID(drone_task)};
 	uORB::Publication<vehicle_command_s> _vehicle_command_pub{ORB_ID(vehicle_command)};
 
+        uORB::Publication<vehicle_thrust_setpoint_s> _thrust_setpoint_pub{
+            ORB_ID(vehicle_thrust_setpoint)}; // vehicle thrust setpoint
+
+        uORB::Publication<vehicle_torque_setpoint_s> _torque_setpoint_pub{
+            ORB_ID(vehicle_torque_setpoint)}; // vehicle torque setpoint
+
+	// vehicle_thrust_setpoint_s
+	// vehicle_torque_setpoint_s
+
+        drone_task_s _drone_task{};
+        input_rc_s _input_rc{};
 	status_s _status_msg{};
 	vehicle_command_s _vehicle_command_arm{};
 
@@ -163,7 +171,6 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         float range = 1.0f;
         uint8_t bitReg = 0;
         uint8_t update1 = 0;
-	bool armed = false;
 
 
 };
