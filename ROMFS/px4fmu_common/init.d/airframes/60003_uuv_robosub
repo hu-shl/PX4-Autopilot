@@ -31,12 +31,12 @@ param set-default CA_AIRFRAME 7
 param set-default CA_ROTOR_COUNT 7 # number of rotors
 param set-default CA_R_REV 255
 
-# T200 starboard horizontal (1)
+# T200 - Port horizontal (1)
 param set-default CA_ROTOR0_AX 0
 param set-default CA_ROTOR0_AY 1
 param set-default CA_ROTOR0_AZ 0
 param set-default CA_ROTOR0_KM 0
-param set-default CA_ROTOR0_PX 1
+param set-default CA_ROTOR0_PX -1
 param set-default CA_ROTOR0_PY 0
 param set-default CA_ROTOR0_PZ 0
 
@@ -49,20 +49,20 @@ param set-default CA_ROTOR1_PX 0
 param set-default CA_ROTOR1_PY -1
 param set-default CA_ROTOR1_PZ 0
 
-# Bow port vertical (3)
+# Bow starboard vertical (3)
 param set-default CA_ROTOR2_AX 0
 param set-default CA_ROTOR2_AY 0
 param set-default CA_ROTOR2_AZ -1
-param set-default CA_ROTOR2_PX -0.3
+param set-default CA_ROTOR2_PX 0.3
 param set-default CA_ROTOR2_PY 1
 param set-default CA_ROTOR2_PZ 0
 param set-default CA_ROTOR2_CT 0.7 # Limit thrust output to 70 percent for vertical bow thrusters
 
-# Bow starboard vertical (4)
+# Bow port vertical (4)
 param set-default CA_ROTOR3_AX 0
 param set-default CA_ROTOR3_AY 0
 param set-default CA_ROTOR3_AZ -1
-param set-default CA_ROTOR3_PX 0.3
+param set-default CA_ROTOR3_PX -0.3
 param set-default CA_ROTOR3_PY 1
 param set-default CA_ROTOR3_PZ 0
 param set-default CA_ROTOR3_CT 0.7 # Limit thrust output to 70 percent for vertical bow thrusters
@@ -75,12 +75,12 @@ param set-default CA_ROTOR4_PX 0
 param set-default CA_ROTOR4_PY 0.5
 param set-default CA_ROTOR4_PZ 0
 
-# T200 - Port horizontal (6)
+# T200 starboard horizontal (6)
 param set-default CA_ROTOR5_AX 0
 param set-default CA_ROTOR5_AY 1
 param set-default CA_ROTOR5_AZ 0
 param set-default CA_ROTOR5_KM 0
-param set-default CA_ROTOR5_PX -1
+param set-default CA_ROTOR5_PX 1
 param set-default CA_ROTOR5_PY 0
 param set-default CA_ROTOR5_PZ 0
 
@@ -92,12 +92,32 @@ param set-default CA_ROTOR6_PX 0
 param set-default CA_ROTOR6_PY -0.8
 param set-default CA_ROTOR6_PZ 0
 
-param set-default PWM_MAIN_OUT 1234567  # Enable channels 1-7 for PWM
-param set-default PWM_MAIN_RATE 400     # Set PWM frequency to 400 Hz
-param set-default PWM_MAIN_DISARM 1500  # Stop neutral when disarmed
-param set-default PWM_MAIN_MIN 1100     # Minimum PWM value full reverse
-param set-default PWM_MAIN_MAX 1900     # Maximum PWM value full forward
-
+# param set-default PWM_AUX_OUT 1234567  # Enable channels 1-7 for PWM
+param set-default PWM_MAIN_TIM0 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_TIM1 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_TIM2 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_TIM3 400 # Set PWM frequency to 400 Hz
+param set-default PWM_MAIN_DIS0 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN0 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX0 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS1 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN1 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX1 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS2 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN2 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX2 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS3 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN3 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX3 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS4 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN4 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX4 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS5 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN5 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX5 1900     # Maximum PWM value full forwaMAIN
+param set-default PWM_MAIN_DIS6 1500  # Stop neutral when disarmed
+param set-default PWM_MAIN_MIN6 1100     # Minimum PWM value full reverse
+param set-default PWM_MAIN_MAX6 1900     # Maximum PWM value full forwaMAIN
 param set-default PWM_MAIN_FUNC1 101
 param set-default PWM_MAIN_FUNC2 102
 param set-default PWM_MAIN_FUNC3 103
@@ -119,12 +139,12 @@ param set-default BAT1_SOURCE 0
 
 rs_motor_control start
 rs_remote_control start
-control_allocator start
+# control_allocator start # disabled for RAMI-2025
 land_detector start rover
 
 rs_canfd_socket start
 rs_canfd_receiver start
 rs_canfd_sender start
 
-rs_pos_control start
-rs_status_monitor start
+# rs_pos_control start # disabled for RAMI-2025
+# rs_status_monitor start # disabled for RAMI-2025

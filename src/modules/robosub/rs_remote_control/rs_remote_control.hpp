@@ -33,20 +33,37 @@
 
 #pragma once
 
+#include <math.h> // for fabsf and expf
+
+// PX4 INCLUDES
+#include <lib/perf/perf_counter.h>
+#include <px4_platform_common/defines.h>
+#include <px4_platform_common/getopt.h>
+#include <px4_platform_common/log.h>
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
-#include <uORB/SubscriptionInterval.hpp>
-#include <uORB/topics/parameter_update.h>
+#include <px4_platform_common/posix.h>
+#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+#include <px4_platform_common/time.h>
+
+// PX4 UORB INCLUDES
+#include <uORB/Publication.hpp>
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
-#include <uORB/Publication.hpp>
-#include <lib/perf/perf_counter.h>
-#include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
-#include <uORB/topics/input_rc.h>
-#include <uORB/topics/water_detection.h>
+#include <uORB/SubscriptionInterval.hpp>
+
+// PX4 UORB TOPICS
 #include <uORB/topics/drone_task.h>
+#include <uORB/topics/input_rc.h>
+#include <uORB/topics/parameter_update.h>
+#include <uORB/topics/sensor_combined.h>
 #include <uORB/topics/status.h>
 #include <uORB/topics/vehicle_command.h>
+#include <uORB/topics/water_detection.h>
+
+// Setpoints
+#include <uORB/topics/vehicle_thrust_setpoint.h> // vehicle thrust setpoint publication
+#include <uORB/topics/vehicle_torque_setpoint.h> // vehicle torque setpoint publication
 
 using namespace time_literals;
 
@@ -117,42 +134,57 @@ extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
         water_detection_s _water_detection{};
         water_detection_s water_detection_msg{}; // create the temp message struct
 
-        float outputT200 = 0.0f;
-        float kP = 1.0f;
-        float kI = 1.0f;
-        float kD = 1.0f;
-
         void taskStat();
 
-	bool status_safe = true;
-	hrt_abstime status_emergency_start = 0;
-
+        bool status_safe = true;
+        hrt_abstime status_emergency_start = 0;
 
         void parameters_update(bool force = false);
 
-        DEFINE_PARAMETERS(
-                          (ParamFloat<px4::params::UP_MOTOR_RED>)_param_front_up_motor_reduction,
+        /** @brief constrain actuator torque and thrust setpoint btwn -1 and 1 */
+        void constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x, float thrust_y,
+                                         float thrust_z);
+
+        /** @brief Apply water safety */
+        void apply_water_safety(float &p_roll_u, float &p_pitch_u, float &p_yaw_u, float &p_thrust_x, float &p_thrust_y,
+                                float &p_thrust_z);
+
+        void publish_thrust_setpoint(void);
+
+        void publish_torque_setpoint(void);
+
+        DEFINE_PARAMETERS((ParamFloat<px4::params::UP_MOTOR_RED>)_param_front_up_motor_reduction,
                           (ParamFloat<px4::params::TILT_MODIFY>)_param_tilt_modifier,
-                          (ParamFloat<px4::params::THRUST_T200>)_param_thrust_t200_limiter
-			)
+                          (ParamFloat<px4::params::THRUST_T200>)_param_thrust_t200_limiter)
 
         // Subscriptions
         uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
         uORB::SubscriptionCallbackWorkItem _input_rc_sub{this, ORB_ID(input_rc)};
-	uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
+        uORB::Subscription _status_sub{ORB_ID(status)}; /**< status subscription */
 
         uORB::Publication<drone_task_s> _drone_task_pub{ORB_ID(drone_task)};
-	uORB::Publication<vehicle_command_s> _vehicle_command_pub{ORB_ID(vehicle_command)};
+        uORB::Publication<vehicle_command_s> _vehicle_command_pub{ORB_ID(vehicle_command)};
+
+        uORB::Publication<vehicle_thrust_setpoint_s> _thrust_setpoint_pub{
+            ORB_ID(vehicle_thrust_setpoint)}; // vehicle thrust setpoint
+
+        uORB::Publication<vehicle_torque_setpoint_s> _torque_setpoint_pub{
+            ORB_ID(vehicle_torque_setpoint)}; // vehicle torque setpoint
+
+        // vehicle_thrust_setpoint_s
+        // vehicle_torque_setpoint_s
 
         drone_task_s _drone_task{};
         input_rc_s _input_rc{};
-	status_s _status_msg{};
-	vehicle_command_s _vehicle_command_arm{};
+        status_s _status_msg{};
+        vehicle_command_s _vehicle_command_arm{};
+
+        // Define publication variables
+        vehicle_thrust_setpoint_s vehicle_thrust_setpoint{}; // vehicle thrust setpoint
+        vehicle_torque_setpoint_s vehicle_torque_setpoint{}; // vehicle torque setpoint
 
         float normalized[8];
-        float range = 1.0f;
         uint8_t bitReg = 0;
         uint8_t update1 = 0;
-
-
+        bool armed = false;
 };
