@@ -268,13 +268,17 @@ void RobosubPosControl::Run()
                 switch (_drone_task.task)
                 {
                 case _drone_task.TASK_REMOTECONTROLLED: // RAW Remote Control
-                case _drone_task.TASK_BUOYANCYCRTL:     // Buoyancy Control
-                        // Task: Disable all position control
+			break; // RAMI-2025
+                case _drone_task.TASK_RC_PID:     //  RAMI-2025 Remote controlled Pitch stabilisation
+
+                        configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
+
+			// Disable other axis
                         configure_axis(X_Axis, PID_MODE_DISABLED);
                         configure_axis(Y_Axis, PID_MODE_DISABLED);
                         configure_axis(Z_Axis, PID_MODE_DISABLED);
                         configure_axis(Roll_Axis, PID_MODE_DISABLED);
-                        configure_axis(Pitch_Axis, PID_MODE_DISABLED);
+                        // configure_axis(Pitch_Axis, PID_MODE_DISABLED); // RAMI-2025 enable only pitch position
                         configure_axis(Yaw_Axis, PID_MODE_DISABLED);
 
                         break;
