@@ -40,6 +40,7 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 
+#define TEST_HORIZONTAL_DISTANCE 2.0f // Distance to move in x direction
 
 int RobosubNavigator::print_status()
 {

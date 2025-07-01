@@ -31,13 +31,16 @@
  *
  ****************************************************************************/
 
-#include <float.h>
+// LIBRARY INCLUDES
+#include <float.h>                 // floating point
+#include <lib/pid/PID.hpp>         // PID Controller
+#include <drivers/drv_hrt.h>       // High Resolution Timer
+#include <lib/perf/perf_counter.h> // Performance Counters
 
-#include <drivers/drv_hrt.h>
-#include <lib/geo/geo.h>
-#include <lib/mathlib/mathlib.h>
-#include <lib/perf/perf_counter.h>
-#include <matrix/math.hpp>
+#include <lib/mathlib/mathlib.h>     // Math Library
+// #include <matrix/math.hpp>
+
+// PX4 INCLUDES
 #include <px4_platform_common/px4_config.h>
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/posix.h>
@@ -45,41 +48,97 @@
 #include <px4_platform_common/module.h>
 #include <px4_platform_common/module_params.h>
 #include <px4_platform_common/px4_work_queue/ScheduledWorkItem.hpp>
+
+// PX4 UORB INCLUDES
 #include <uORB/Subscription.hpp>
 #include <uORB/SubscriptionCallback.hpp>
 #include <uORB/Publication.hpp>
-// #include <uORB/PublicationMulti.hpp>
-#include <uORB/topics/manual_control_setpoint.h>
-#include <uORB/topics/parameter_update.h>
-#include <uORB/topics/trajectory_setpoint.h>
-// #include <uORB/topics/input_rc.h>
-// #include <uORB/topics/actuator_test.h>
-#include <uORB/topics/vehicle_attitude.h>
-#include <uORB/topics/vehicle_local_position.h>
-#include <uORB/topics/vehicle_attitude_setpoint.h>
-#include <uORB/topics/vehicle_angular_velocity.h>
-#include <uORB/topics/vehicle_rates_setpoint.h>
-#include <uORB/topics/vehicle_control_mode.h>
 
-#include <uORB/topics/vehicle_thrust_setpoint.h>
-#include <uORB/topics/vehicle_torque_setpoint.h>
-#include <uORB/topics/water_detection.h>
+// PX4 TOPICS
+// parameters
+#include <uORB/topics/parameter_update.h>
+
+// Setpoints
+#include <uORB/topics/trajectory_setpoint.h>        // setpoints from navigation module
+// add other topics when other sources are needed
+
+// Drone status
+#include <uORB/topics/drone_task.h>                 // current drone task (search buoy, search tube, etc.)
+#include <uORB/topics/status.h>                     // current status of drone (critical battery, low battery, etc.)
+
+// Current data
+#include <uORB/topics/vehicle_local_position.h>     // position and velocity for x, y and z
+#include <uORB/topics/vehicle_attitude.h>           // position for roll, pitch and yaw
+#include <uORB/topics/vehicle_angular_velocity.h>   // velocity for roll, pitch and yaw
+
+// Publications
+#include <uORB/topics/vehicle_thrust_setpoint.h>    // vehicle thrust setpoint publication (x, y and z)
+#include <uORB/topics/vehicle_torque_setpoint.h>    // vehicle torque setpoint publication (roll, pitch and yaw)
 
 #include <uORB/uORB.h>
 
+// PX4 LOG
 #include <px4_platform_common/log.h>
 
-using matrix::Dcmf;
-using matrix::Eulerf;
-using matrix::Matrix3f;
-using matrix::Quatf;
-using matrix::Vector3f;
+// ENTRY POINT
+extern "C" __EXPORT int rs_pos_control_main(int argc, char *argv[]);
 
+// NAMESPACES
 using uORB::SubscriptionData;
 
 using namespace time_literals;
 
-class RobosubPosControl : public ModuleBase<RobosubPosControl>, public ModuleParams, public px4::WorkItem {
+typedef enum PIDMode
+{                          //                                               Switch 1    Switch 2
+    PID_MODE_DISABLED = 0, // PID control is disabled                       DNC         L
+    PID_MODE_POSITION = 1, // PID control is in position mode               L           H
+    PID_MODE_VELOCITY = 2, // PID control is in velocity mode               H           H
+    PID_MODE_HOLD_POSITION = 3, // PID control is in hold position mode     L           H
+    PID_MODE_HOLD_VELOCITY = 4, // PID control is in hold velocity mode     H           H
+} PIDMode_e;
+
+typedef struct AxisPID
+{
+    // use pointers so that we dont have to copy the data
+    // setpoint
+    float* setpoint_ptr;
+    float _setpoint; // hold setpoint for position or velocity
+
+    // current data
+    float* feedback_ptr;
+
+
+    // Position PID
+    float PID1_P_gain;          // PID gains
+    float PID1_I_gain;
+    float PID1_D_gain;
+    float PID1_I_limit;
+    float PID1_out_limit;       // output gains and limits
+    float PID1_out_scale;
+
+    // Velocity PID
+    float PID2_P_gain;          // PID gains
+    float PID2_I_gain;
+    float PID2_D_gain;
+    float PID2_I_limit;
+    float PID2_out_limit;       // output gains and limits
+    float PID2_out_scale;
+
+    float pid_output;           // PID output value
+
+    uint64_t last_run_time;     // last time the PID was run
+
+    PIDMode_e PID_mode;         // PID Mode
+
+    PID PID1;
+    PID PID2;                  // PID controllers for position and velocity
+} AxisPID_s;
+
+// MAIN CLASS
+class RobosubPosControl : public ModuleBase<RobosubPosControl>,
+                          public ModuleParams,
+                          public px4::ScheduledWorkItem
+{
       public:
         RobosubPosControl();
         ~RobosubPosControl();
@@ -94,102 +153,166 @@ class RobosubPosControl : public ModuleBase<RobosubPosControl>, public ModulePar
 
         bool init();
 
+        void Run() override;
+
       private:
-        void publishTorqueSetpoint(const hrt_abstime &timestamp_sample);
-        void publishThrustSetpoint(const hrt_abstime &timestamp_sample);
+        AxisPID_s X_Axis;
+        AxisPID_s Y_Axis;
+        AxisPID_s Z_Axis;
+        AxisPID_s Roll_Axis;
+        AxisPID_s Pitch_Axis;
+        AxisPID_s Yaw_Axis;
 
-        uORB::Publication<vehicle_attitude_setpoint_s> _att_sp_pub{ORB_ID(vehicle_attitude_setpoint)};
+        // uORB subscriptions
+        uORB::Subscription _drone_task_sub{
+            ORB_ID(drone_task)};                                // drone task subscription
 
-        uORB::Publication<vehicle_thrust_setpoint_s> _vehicle_thrust_setpoint_pub{ORB_ID(vehicle_thrust_setpoint)};
-        uORB::Publication<vehicle_torque_setpoint_s> _vehicle_torque_setpoint_pub{ORB_ID(vehicle_torque_setpoint)};
+        uORB::Subscription _status_sub{
+            ORB_ID(status)};                                   // status subscription
 
-        uORB::SubscriptionInterval _parameter_update_sub{ORB_ID(parameter_update), 1_s};
+        uORB::Subscription _vehicle_local_position_sub{
+            ORB_ID(vehicle_local_position)};                           // vehicle local position subscription
 
-        uORB::Subscription _vehicle_attitude_setpoint_sub{
-            ORB_ID(vehicle_attitude_setpoint)}; /**< vehicle attitude setpoint */
-        uORB::Subscription _vehicle_rates_setpoint_sub{
-            ORB_ID(vehicle_rates_setpoint)}; /**< vehicle bodyrates setpoint subscriber */
-        uORB::Subscription _trajectory_setpoint_sub{ORB_ID(trajectory_setpoint)};
-        uORB::Subscription _angular_velocity_sub{
-            ORB_ID(vehicle_angular_velocity)}; /**< vehicle angular velocity subscription */
-        uORB::Subscription _manual_control_setpoint_sub{
-            ORB_ID(manual_control_setpoint)}; /**< notification of manual control updates */
-        uORB::Subscription _vcontrol_mode_sub{
-            ORB_ID(vehicle_control_mode)}; /**< vehicle status subscription TaskModeManager */
+        uORB::Subscription _vehicle_attitude_sub{
+            ORB_ID(vehicle_attitude)};                          // vehicle attitude subscription
 
+        uORB::Subscription _vehicle_angular_velocity_sub{
+            ORB_ID(vehicle_angular_velocity)};                  // vehicle angular velocity subscription
 
-        uORB::Subscription _water_detection_sub{
-            ORB_ID(water_detection)}; /* Mainbrain and power exeterior water dectection sensor outside */
+        uORB::Subscription _trajectory_setpoint_sub{
+            ORB_ID(trajectory_setpoint)};                       // vehicle trajectory setpoint subscription
 
-        uORB::SubscriptionCallbackWorkItem _vehicle_local_position_sub{this, ORB_ID(vehicle_local_position)};
-        uORB::SubscriptionCallbackWorkItem _vehicle_attitude_sub{this, ORB_ID(vehicle_attitude)};
+        uORB::SubscriptionInterval _parameter_update_sub{
+            ORB_ID(parameter_update), 1_s};                     // parameter update subscription
 
-        vehicle_attitude_s _vehicle_attitude{};
+        // uORB publications
+        uORB::Publication<vehicle_thrust_setpoint_s> _thrust_setpoint_pub{
+            ORB_ID(vehicle_thrust_setpoint)}; // vehicle thrust setpoint
 
-        vehicle_thrust_setpoint_s _vehicle_thrust_setpoint{};
-        vehicle_torque_setpoint_s _vehicle_torque_setpoint{};
-        manual_control_setpoint_s _manual_control_setpoint{};
-        vehicle_attitude_setpoint_s _attitude_setpoint{};
-        vehicle_rates_setpoint_s _rates_setpoint{}; // vechile bodyrates setpoint */
-        trajectory_setpoint_s _trajectory_setpoint{};
-        vehicle_control_mode_s _vcontrol_mode{};
-
-  	water_detection_s _water_detection{};
+        uORB::Publication<vehicle_torque_setpoint_s> _torque_setpoint_pub{
+            ORB_ID(vehicle_torque_setpoint)}; // vehicle torque setpoint
 
         perf_counter_t _loop_perf;
 
+        drone_task_s
+            _drone_task{};   // drone task
+        status_s
+            _status{};       // status
+
+        trajectory_setpoint_s
+            _trajectory_setpoint{}; // vehicle trajectory setpoint
+        vehicle_local_position_s
+            _vehicle_local_position{}; // vehicle local position
+        vehicle_attitude_s
+            _vehicle_attitude{}; // vehicle attitude
+        vehicle_angular_velocity_s
+            _vehicle_angular_velocity{}; // vehicle angular velocity
+
+
+        // Define publication variables
+        vehicle_thrust_setpoint_s
+            _vehicle_thrust_setpoint{}; // vehicle thrust setpoint
+        vehicle_torque_setpoint_s
+            _vehicle_torque_setpoint{}; // vehicle torque setpoint
+
         DEFINE_PARAMETERS(
-            (ParamFloat<px4::params::RS_GAIN_X_P>)_param_pose_gain_x,
-            (ParamFloat<px4::params::RS_GAIN_Y_P>)_param_pose_gain_y,
-            (ParamFloat<px4::params::RS_GAIN_Z_P>)_param_pose_gain_z,
-            (ParamFloat<px4::params::RS_GAIN_X_D>)_param_pose_gain_d_x,
-            (ParamFloat<px4::params::RS_GAIN_Y_D>)_param_pose_gain_d_y,
-            (ParamFloat<px4::params::RS_GAIN_Z_D>)_param_pose_gain_d_z,
+            (ParamFloat<px4::params::RS_PID1_X_P>)_pid1_gain_x_p, // PID gains for X axis
+            (ParamFloat<px4::params::RS_PID1_X_I>)_pid1_gain_x_i,
+            (ParamFloat<px4::params::RS_PID1_X_D>)_pid1_gain_x_d,
+            (ParamFloat<px4::params::RS_PID1_X_I_LIM>)_pid1_i_limit_x,
+            (ParamFloat<px4::params::RS_PID1_X_OP_LIM>)_pid1_output_limit_x, // PID output limit for X axis
+            (ParamFloat<px4::params::RS_PID1_X_OP_SCL>)_pid1_output_scale_x, // PID output scale for X axis
+            (ParamFloat<px4::params::RS_PID2_X_P>)_pid2_gain_x_p, // PID gains for X axis
+            (ParamFloat<px4::params::RS_PID2_X_I>)_pid2_gain_x_i,
+            (ParamFloat<px4::params::RS_PID2_X_D>)_pid2_gain_x_d,
+            (ParamFloat<px4::params::RS_PID2_X_I_LIM>)_pid2_i_limit_x,
+            (ParamFloat<px4::params::RS_PID2_X_OP_SCL>)_pid2_output_scale_x, // PID output scale for X axis
 
-            (ParamFloat<px4::params::RS_ROLL_P>)_param_roll_p, (ParamFloat<px4::params::RS_ROLL_D>)_param_roll_d,
-            (ParamFloat<px4::params::RS_PITCH_P>)_param_pitch_p, (ParamFloat<px4::params::RS_PITCH_D>)_param_pitch_d,
-            (ParamFloat<px4::params::RS_YAW_P>)_param_yaw_p, (ParamFloat<px4::params::RS_YAW_D>)_param_yaw_d,
-            // control/input modes
-            (ParamInt<px4::params::RS_INPUT_MODE>)_param_input_mode,
-            (ParamInt<px4::params::RS_STAB_MODE>)_param_stabilization,
-            (ParamInt<px4::params::RS_SKIP_CTRL>)_param_skip_ctrl, /** < Whether to skip geometric controller */
-            // direct access to inputs
-            (ParamFloat<px4::params::RS_DIRCT_ROLL>)_param_direct_roll,
-            (ParamFloat<px4::params::RS_DIRCT_PITCH>)_param_direct_pitch,
-            (ParamFloat<px4::params::RS_DIRCT_YAW>)_param_direct_yaw,
-            (ParamFloat<px4::params::RS_DIRCT_THRUST>)_param_direct_thrust)
+            (ParamFloat<px4::params::RS_PID1_Y_P>)_pid1_gain_y_p, // PID output limit for X axis
+            (ParamFloat<px4::params::RS_PID1_Y_I>)_pid1_gain_y_i, // PID gains for Y axis
+            (ParamFloat<px4::params::RS_PID1_Y_D>)_pid1_gain_y_d,
+            (ParamFloat<px4::params::RS_PID1_Y_I_LIM>)_pid1_i_limit_y,
+            (ParamFloat<px4::params::RS_PID1_Y_OP_LIM>)_pid1_output_limit_y, // PID output limit for Y axis
+            (ParamFloat<px4::params::RS_PID1_Y_OP_SCL>)_pid1_output_scale_y, // PID output scale for Y axis
+            (ParamFloat<px4::params::RS_PID2_Y_P>)_pid2_gain_y_p, // PID gains for Y axis
+            (ParamFloat<px4::params::RS_PID2_Y_I>)_pid2_gain_y_i,
+            (ParamFloat<px4::params::RS_PID2_Y_D>)_pid2_gain_y_d,
+            (ParamFloat<px4::params::RS_PID2_Y_I_LIM>)_pid2_i_limit_y,
+            (ParamFloat<px4::params::RS_PID2_Y_OP_SCL>)_pid2_output_scale_y, // PID output scale for Y axis
 
-        void Run() override;
-        /**
-         * Update our local parameter cache.
-         */
-        void parameters_update(bool force = false);
+            (ParamFloat<px4::params::RS_PID1_Z_P>)_pid1_gain_z_p, // PID output limit for Y axis
+            (ParamFloat<px4::params::RS_PID1_Z_I>)_pid1_gain_z_i, // PID gains for Z axis
+            (ParamFloat<px4::params::RS_PID1_Z_D>)_pid1_gain_z_d,
+            (ParamFloat<px4::params::RS_PID1_Z_I_LIM>)_pid1_i_limit_z,
+            (ParamFloat<px4::params::RS_PID1_Z_OP_LIM>)_pid1_output_limit_z, // PID output limit for Z axis
+            (ParamFloat<px4::params::RS_PID1_Z_OP_SCL>)_pid1_output_scale_z, // PID output scale for Z axis
+            (ParamFloat<px4::params::RS_PID2_Z_P>)_pid2_gain_z_p, // PID gains for Z axis
+            (ParamFloat<px4::params::RS_PID2_Z_I>)_pid2_gain_z_i,
+            (ParamFloat<px4::params::RS_PID2_Z_D>)_pid2_gain_z_d,
+            (ParamFloat<px4::params::RS_PID2_Z_I_LIM>)_pid2_i_limit_z,
+            (ParamFloat<px4::params::RS_PID2_Z_OP_SCL>)_pid2_output_scale_z, // PID output scale for Z axis
 
-        void publish_attitude_setpoint(const float thrust_x, const float thrust_y, const float thrust_z,
-                                       const float roll_des, const float pitch_des, const float yaw_des);
+            (ParamFloat<px4::params::RS_PID1_A_P>)_pid1_gain_pitch_p, // PID output limit for Z axis
+            (ParamFloat<px4::params::RS_PID1_A_I>)_pid1_gain_pitch_i, // PID gains for Pitch axis
+            (ParamFloat<px4::params::RS_PID1_A_D>)_pid1_gain_pitch_d,
+            (ParamFloat<px4::params::RS_PID1_A_I_LIM>)_pid1_i_limit_pitch,
+            (ParamFloat<px4::params::RS_PID1_A_OP_LIM>)_pid1_output_limit_pitch, // PID output limit for Pitch axis
+            (ParamFloat<px4::params::RS_PID1_A_OP_SCL>)_pid1_output_scale_pitch, // PID output scale for Pitch axis
+            (ParamFloat<px4::params::RS_PID2_A_P>)_pid2_gain_pitch_p, // PID gains for Pitch axis
+            (ParamFloat<px4::params::RS_PID2_A_I>)_pid2_gain_pitch_i,
+            (ParamFloat<px4::params::RS_PID2_A_D>)_pid2_gain_pitch_d,
+            (ParamFloat<px4::params::RS_PID2_A_I_LIM>)_pid2_i_limit_pitch,
+            (ParamFloat<px4::params::RS_PID2_A_OP_SCL>)_pid2_output_scale_pitch, // PID output scale for Pitch axis
 
-        /**
-         * @brief In-/underwater actuator safety factor
-         */
-        void apply_water_safety(float &roll_u, float &pitch_u, float &yaw_u, float &thrust_x, float &thrust_y,
-                                float &thrust_z);
-        /**
-         * @brief Control Attitude geometric controller
-         */
-        void control_attitude_geo(const vehicle_attitude_s &attitude,
-                                  const vehicle_attitude_setpoint_s &attitude_setpoint,
-                                  const vehicle_angular_velocity_s &angular_velocity,
-                                  const vehicle_rates_setpoint_s &rates_setpoint);
+            (ParamFloat<px4::params::RS_PID1_B_P>)_pid1_gain_roll_p, // PID output limit for Roll axis
+            (ParamFloat<px4::params::RS_PID1_B_I>)_pid1_gain_roll_i, // PID gains for Roll axis
+            (ParamFloat<px4::params::RS_PID1_B_D>)_pid1_gain_roll_d,
+            (ParamFloat<px4::params::RS_PID1_B_I_LIM>)_pid1_i_limit_roll,
+            (ParamFloat<px4::params::RS_PID1_B_OP_LIM>)_pid1_output_limit_roll, // PID output limit for Roll axis
+            (ParamFloat<px4::params::RS_PID1_B_OP_SCL>)_pid1_output_scale_roll, // PID output scale for Roll axis
+            (ParamFloat<px4::params::RS_PID2_B_P>)_pid2_gain_roll_p, // PID gains for Roll axis
+            (ParamFloat<px4::params::RS_PID2_B_I>)_pid2_gain_roll_i,
+            (ParamFloat<px4::params::RS_PID2_B_D>)_pid2_gain_roll_d,
+            (ParamFloat<px4::params::RS_PID2_B_I_LIM>)_pid2_i_limit_roll,
+            (ParamFloat<px4::params::RS_PID2_B_OP_SCL>)_pid2_output_scale_roll, // PID output scale for Roll axis
 
-        void constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x, float thrust_y,
-                                         float thrust_z);
+            (ParamFloat<px4::params::RS_PID1_C_P>)_pid1_gain_yaw_p, // PID output limit for Yaw axis
+            (ParamFloat<px4::params::RS_PID1_C_I>)_pid1_gain_yaw_i, // PID gains for Yaw axis
+            (ParamFloat<px4::params::RS_PID1_C_D>)_pid1_gain_yaw_d,
+            (ParamFloat<px4::params::RS_PID1_C_I_LIM>)_pid1_i_limit_yaw,
+            (ParamFloat<px4::params::RS_PID1_C_OP_LIM>)_pid1_output_limit_yaw, // PID output limit for Yaw axis
+            (ParamFloat<px4::params::RS_PID1_C_OP_SCL>)_pid1_output_scale_yaw, // PID output scale for Yaw axis
+            (ParamFloat<px4::params::RS_PID2_C_P>)_pid2_gain_yaw_p, // PID gains for Yaw axis
+            (ParamFloat<px4::params::RS_PID2_C_I>)_pid2_gain_yaw_i,
+            (ParamFloat<px4::params::RS_PID2_C_D>)_pid2_gain_yaw_d,
+            (ParamFloat<px4::params::RS_PID2_C_I_LIM>)_pid2_i_limit_yaw,
+            (ParamFloat<px4::params::RS_PID2_C_OP_SCL>)_pid2_output_scale_yaw, // PID output scale for Yaw axis
 
-        /* TODO_RS 6DOF controller*/
-        void pos_controller_6dof(const Vector3f &pos_des, const float roll_des, const float pitch_des,
-                                 const float yaw_des, vehicle_attitude_s &vehicle_attitude,
-                                 vehicle_local_position_s &vlocal_pos);
+            (ParamFloat<px4::params::RS_PID2_OP_LIM>)_pid2_output_limit, // PID output limit for all axes
+            (ParamInt<px4::params::RS_POS_CTRL_FREQ>)_pid_frequency, // force parameter update
+            (ParamInt<px4::params::RS_FORCE_PARAMS>)_force_param // PID mode parameter
+        );
 
-        void stabilization_controller_6dof(const Vector3f &pos_des, const float roll_des, const float pitch_des,
-                                           const float yaw_des, vehicle_attitude_s &vehicle_attitude,
-                                           vehicle_local_position_s &vlocal_pos);
-};
+        float zero = 0;
+
+        // publication methods
+        void publish_thrust_setpoint(const float thrust_x,
+                                     const float thrust_y,
+                                     const float thrust_z);
+
+        void publish_torque_setpoint(const float torque_pitch,
+                                     const float torque_roll,
+                                     const float torque_yaw);
+
+        // paramter update methods
+        int parameters_update(bool force = false);
+
+
+        void run_axis_pid(AxisPID_s &axis);
+
+        float scale_and_limit(float val, float scale, float limit);
+
+
+
+        void configure_axis(AxisPID_s &axis, PIDMode_e mode, bool reset_on_change = true, float* feedback = NULL, float* setpoint = NULL);
+    };
