@@ -129,14 +129,14 @@ param set-default MAV_1_CONFIG 103
 param set-default MAV_1_RATE 40000
 param set-default SER_TEL3_BAUD 115200
 
-# rs_motor_control start
-# rs_remote_control start
+rs_motor_control start
+rs_remote_control start
 # control_allocator start # disabled for RAMI-2025
 # land_detector start rover
 
-# rs_canfd_socket start
-# rs_canfd_receiver start
-# rs_canfd_sender start
+rs_canfd_socket start
+rs_canfd_receiver start
+rs_canfd_sender start
 
 # rs_pos_control start # disabled for RAMI-2025
 # rs_status_monitor start # disabled for RAMI-2025

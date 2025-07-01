@@ -240,6 +240,7 @@ void RobosubRemoteControl::receiver() {
                         }
 
 			sensor_mainbrain = true; // Needed for rami-2025
+			sensor_power = true;
 
                         // if (!sensor_mainbrain && !sensor_power) {
                         //         range = 0.2f;
@@ -253,7 +254,7 @@ void RobosubRemoteControl::receiver() {
                         } else { // Needed for rami-2025 because we don't have the sensor in the mainbrain
                                 range = 0.2f;
                         }
-                        // range = 1.0f; // Disable safety water detection force range to 100 perc
+                        range = 1.0f; // Disable safety water detection force range to 100 perc
 
                         // Normalize the rc data to a value between -1 and 1
                         normalized[0] = (rc_data.values[1] - 1500) / 400.0f;

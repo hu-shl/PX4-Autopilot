@@ -663,7 +663,14 @@ unset SDCARD_FORMAT
 unset STARTUP_TUNE
 unset VEHICLE_TYPE
 
+rs_motor_control start
+rs_remote_control start
+rs_canfd_socket start
+rs_canfd_receiver start
+rs_canfd_sender start
+
 #
 # Boot is complete, inform MAVLink app(s) that the system is now fully up and running.
 #
 mavlink boot_complete
+
