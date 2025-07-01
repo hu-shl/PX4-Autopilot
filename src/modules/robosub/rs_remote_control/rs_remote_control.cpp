@@ -35,16 +35,6 @@
 
 #include "../rs_motor_control/rs_motor_control.hpp"
 
-#include <px4_platform_common/getopt.h>
-#include <px4_platform_common/log.h>
-#include <px4_platform_common/posix.h>
-#include <px4_platform_common/defines.h>
-#include <px4_platform_common/time.h>
-#include <math.h> // for fabsf and expf
-
-#include <uORB/topics/parameter_update.h>
-#include <uORB/topics/sensor_combined.h>
-
 // PX4 defines for InternalSensors.msg
 #define SENSOR_HUMIDITY 0
 #define SENSOR_TEMPERATURE 1
@@ -121,66 +111,62 @@ RobosubRemoteControl::~RobosubRemoteControl() {
 void RobosubRemoteControl::Run() {
         perf_begin(_loop_perf);
 
-	float roll_u, pitch_u, yaw_u = 0.0f;
-	float thrust_x, thrust_y, thrust_z = 0.0f;
+        float roll_u, pitch_u, yaw_u = 0.0f;
+        float thrust_x, thrust_y, thrust_z = 0.0f;
 
-	// Rami-2025 bypass leakage safety
-	taskStat(); // set bitReg to capture which task to handle
-	receiver(); // Receive rc_input
+        // Rami-2025 bypass leakage safety
+        taskStat(); // Set bitReg to capture which task to handle
+        receiver(); // Receive rc_input
 
-	if (bitReg == TASK_REMOTECONTROLLED)
-	{
-		// set desired torque and thrust
-		roll_u = 0.0f;
-		pitch_u = normalized[3];
-		yaw_u  = 0.0f;
-		thrust_x = normalized[0];
-		thrust_y= normalized[2];
-		thrust_z = normalized[1];
+        if (bitReg == TASK_REMOTECONTROLLED) {
+                // Set desired torque and thrust
+                roll_u = 0.0f;
+                pitch_u = normalized[3];
+                yaw_u = 0.0f;
+                thrust_x = normalized[0];
+                thrust_y = normalized[2];
+                thrust_z = normalized[1];
 
-		// Apply water detection safety
-        	apply_water_safety(roll_u, pitch_u, yaw_u, thrust_x, thrust_y, thrust_z);
-		constrain_actuator_commands(roll_u, pitch_u, yaw_u, thrust_x, thrust_y, thrust_z);
+                // Apply water detection safety
+                apply_water_safety(roll_u, pitch_u, yaw_u, thrust_x, thrust_y, thrust_z);
+                constrain_actuator_commands(roll_u, pitch_u, yaw_u, thrust_x, thrust_y, thrust_z);
 
-		publish_thrust_setpoint();
-		publish_torque_setpoint();
-	}
-	else if (bitReg == TASK_RC_PID) // Perform remote controlled PID
-	{
-		// call PID actuator
-		// constrain command (set toruqe and thrust setpoint)
-	}
+                publish_thrust_setpoint();
+                publish_torque_setpoint();
+        } else if (bitReg == TASK_RC_PID) // Perform remote controlled PID
+        {
+                // call PID pos controller?
+                // constrain command (set torque and thrust setpoint)
+        }
 
         // if (!_status_sub.update(&_status_msg) && status_safe) {
         //         taskStat();
 
         //         receiver();
-        // } else { // I don't agree with handling the emergency in here. I think it should be handled in the position controller.
-	// 	status_safe = false;
-	// 	if (_status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) {
-	// 		if (status_emergency_start == 0) {
-	// 			status_emergency_start = hrt_absolute_time();
-	// 		}
-	// 		RobosubMotorControl robosub_motor_control;
-	// 		if (hrt_elapsed_time(&status_emergency_start) > 5_s) {
-	// 			robosub_motor_control.actuator_test(MOTOR_UP1, 0.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_UP2, 0.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_UP3, 0.0f, 0, false);
-	// 		}
-	// 		else {
-	// 			robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
-	// 			robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
-	// 		}
-	// 	} else if (_status_msg.status == status_s::STATUS_LOW_BATTERY) {
-	// 		PX4_ERR("Low battery detected");
-	// 	} else if (_status_msg.status == status_s::STATUS_CRITICAL_BATTERY) {
-	// 		PX4_ERR("Critical battery level");
-	// 	}
+        // } else { // I don't agree with handling the emergency in here. I think it should be handled in the position
+        // controller. 	status_safe = false; 	if (_status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) { 		if
+        // (status_emergency_start == 0) { 			status_emergency_start = hrt_absolute_time();
+        // 		}
+        // 		RobosubMotorControl robosub_motor_control;
+        // 		if (hrt_elapsed_time(&status_emergency_start) > 5_s) {
+        // 			robosub_motor_control.actuator_test(MOTOR_UP1, 0.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_UP2, 0.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_UP3, 0.0f, 0, false);
+        // 		}
+        // 		else {
+        // 			robosub_motor_control.actuator_test(MOTOR_FORWARDS1, 0.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_FORWARDS2, 0.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_SIDE1, 0.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_SIDE2, 0.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_UP1, 1.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_UP2, 1.0f, 0, false);
+        // 			robosub_motor_control.actuator_test(MOTOR_UP3, 1.0f, 0, false);
+        // 		}
+        // 	} else if (_status_msg.status == status_s::STATUS_LOW_BATTERY) {
+        // 		PX4_ERR("Low battery detected");
+        // 	} else if (_status_msg.status == status_s::STATUS_CRITICAL_BATTERY) {
+        // 		PX4_ERR("Critical battery level");
+        // 	}
         // }
 
         // Schedule();
@@ -192,17 +178,15 @@ void RobosubRemoteControl::Run() {
  *
  */
 void RobosubRemoteControl::apply_water_safety(float &p_roll_u, float &p_pitch_u, float &p_yaw_u, float &p_thrust_x,
-                                           float &p_thrust_y, float &p_thrust_z) {
+                                              float &p_thrust_y, float &p_thrust_z) {
         float safety_factor = 1.0f;
-        // bool sensor_mainbrain = false;
-        // bool sensor_power = false;
 
         if (_water_detection_sub.update(&_water_detection)) { // update water detection sensors
                 sensor_mainbrain = _water_detection.mainbrain_sensor;
                 sensor_power = _water_detection.power_module_sensor;
         }
 
-	sensor_mainbrain = true; // Force mainbrain true Needed for RAMI-2025
+        sensor_mainbrain = true; // Force mainbrain true Needed for RAMI-2025
 
         if (!sensor_mainbrain && !sensor_power) // Limit to 20 percent if no water detected
         {
@@ -210,13 +194,13 @@ void RobosubRemoteControl::apply_water_safety(float &p_roll_u, float &p_pitch_u,
         } else if (!sensor_mainbrain && sensor_power) // AUV is on the water
         {
                 safety_factor = 0.3f;
-        } else if (sensor_mainbrain && sensor_power) // Water is detected above (mainbrain) and below (power) AUV. Under water
+        } else if (sensor_mainbrain &&
+                   sensor_power) // Water is detected above (mainbrain) and below (power) AUV. Under water
         {
                 safety_factor = 1.0f; // Full power1.0f
+        } else if (!sensor_power) {   // Needed for for-2025 because we don't have the sensor in the mainbrain
+                safety_factor = 0.2f;
         }
-	else if (!sensor_power){ // Needed for for-2025 because we don't have the sensor in the mainbrain
-		safety_factor = 0.2f;
-	}
 
         p_roll_u *= safety_factor;
         p_pitch_u *= safety_factor;
@@ -253,45 +237,42 @@ void RobosubRemoteControl::taskStat() {
                                 break;
                         case 0b001:
                                 // _drone_task.task = TASK_BUOYANCYCTRL;
-				_drone_task.task = TASK_RC_PID; // RAMI-2025 use this as rc pid?
+                                _drone_task.task = TASK_RC_PID; // RAMI-2025 use this as rc pid?
                                 break;
                         case 0b010:
                                 _drone_task.task = TASK_DPGOAL;
                                 break;
-			case 0b011:
-				_drone_task.task = TASK_DPTELEARM;
-				break;
-			case 0b100:
-				_drone_task.task = TASK_SEARCHBUOY;
-				break;
-			case 0b101:
-				_drone_task.task = TASK_SEARCHTUBE;
-				break;
-			case 0b110:
-				_drone_task.task = TASK_TASK2;
-				break;
+                        case 0b011:
+                                _drone_task.task = TASK_DPTELEARM;
+                                break;
+                        case 0b100:
+                                _drone_task.task = TASK_SEARCHBUOY;
+                                break;
+                        case 0b101:
+                                _drone_task.task = TASK_SEARCHTUBE;
+                                break;
+                        case 0b110:
+                                _drone_task.task = TASK_TASK2;
+                                break;
                         case 0b111:
                                 _drone_task.task = TASK_TASK1;
                                 break;
                         default:
-				_drone_task.task = TASK_REMOTECONTROLLED;
+                                _drone_task.task = TASK_REMOTECONTROLLED;
                                 break;
                         }
 
                         _drone_task.timestamp = hrt_absolute_time();
-			if(!armed) {
-				_vehicle_command_arm.timestamp = hrt_absolute_time();
-				_vehicle_command_arm.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
-				_vehicle_command_arm.param1 = vehicle_command_s::ARMING_ACTION_ARM;
-				_vehicle_command_arm.param2 = 21196; // Some magic number to force the arm command
-				_vehicle_command_pub.publish(_vehicle_command_arm);
-				armed = true;
-			}
-
+                        if (!armed) {
+                                _vehicle_command_arm.timestamp = hrt_absolute_time();
+                                _vehicle_command_arm.command = vehicle_command_s::VEHICLE_CMD_COMPONENT_ARM_DISARM;
+                                _vehicle_command_arm.param1 = vehicle_command_s::ARMING_ACTION_ARM;
+                                _vehicle_command_arm.param2 = 21196; // Some magic number to force the arm command
+                                _vehicle_command_pub.publish(_vehicle_command_arm);
+                                armed = true;
+                        }
 
                         _drone_task_pub.publish(_drone_task);
-
-
                 }
         }
 }
@@ -310,22 +291,29 @@ void RobosubRemoteControl::receiver() {
                         normalized[2] = (rc_data.values[3] - 1500) / 400.0f; // thrust x
                         normalized[3] = (rc_data.values[0] - 1500) / 400.0f; // pitch
 
-                        // robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
-                        // robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] *
+                        // _param_thrust_t200_limiter.get(), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] *
+                        // _param_thrust_t200_limiter.get(), 0, false);
 
                         // robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[1], 0, false);
-                        // robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
-                        // robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] *
+                        // _param_front_up_motor_reduction.get()), 0, false);
+                        // robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] *
+                        // _param_front_up_motor_reduction.get()), 0, false);
 
                         // if (normalized[2] > 0.1f || normalized[2] < -0.1f) {
                         //         robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
                         //         robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
                         // } else {
                         //         if (normalized[3] <= 0)
-			// 	robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
+                        // 	robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
                         //         else if (normalized[3] >= 0) {
-                        //                 robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
-                        //                 robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
+                        //                 robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] *
+                        //                 (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0,
+                        //                 false); robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] *
+                        //                 (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0,
+                        //                 false);
                         //         }
                         // }
                 }
@@ -340,7 +328,7 @@ void RobosubRemoteControl::receiver() {
  * @param pitch_u float
  */
 void RobosubRemoteControl::constrain_actuator_commands(float roll_u, float pitch_u, float yaw_u, float thrust_x,
-                                                    float thrust_y, float thrust_z) {
+                                                       float thrust_y, float thrust_z) {
 
         if (PX4_ISFINITE(roll_u)) {
                 roll_u = math::constrain(roll_u, -1.0f, 1.0f);
@@ -435,8 +423,7 @@ void RobosubRemoteControl::constrain_actuator_commands(float roll_u, float pitch
 // void RobosubRemoteControl::publish_thrust_setpoint(const float thrust_x,
 //                                                 const float thrust_y,
 //                                                 const float thrust_z)
-void RobosubRemoteControl::publish_thrust_setpoint(void)
-{
+void RobosubRemoteControl::publish_thrust_setpoint(void) {
         // vehicle_thrust_setpoint_s vehicle_thrust_setpoint = {};
         vehicle_thrust_setpoint.timestamp = hrt_absolute_time();
 
@@ -456,8 +443,7 @@ void RobosubRemoteControl::publish_thrust_setpoint(void)
 // void RobosubRemoteControl::publish_torque_setpoint(const float torque_roll,
 //                                                 const float torque_pitch,
 //                                                 const float torque_yaw)
-void RobosubRemoteControl::publish_torque_setpoint(void)
-{
+void RobosubRemoteControl::publish_torque_setpoint(void) {
         // vehicle_torque_setpoint_s vehicle_torque_setpoint = {};
         vehicle_torque_setpoint.timestamp = hrt_absolute_time();
 
