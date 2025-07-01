@@ -136,8 +136,8 @@ void RobosubRemoteControl::Run() {
                 publish_torque_setpoint();
         } else if (bitReg == TASK_RC_PID) // Perform remote controlled PID
         {
-		trajectory_setpoint_s trajectory_setpoint{};
-		float PLCHLDR; //
+		// trajectory_setpoint_s trajectory_setpoint{};
+		float PLCHLDR = -1.0f; //
 
 		// set thrust
                 thrust_x = normalized[0];
