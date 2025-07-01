@@ -16,7 +16,6 @@
 #
 # @maintainer
 #
-# @board px4_fmu-v6x_robosub exclude
 #
 
 set VEHICLE_TYPE uuv
