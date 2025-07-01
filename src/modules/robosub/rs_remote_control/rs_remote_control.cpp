@@ -188,18 +188,18 @@ void RobosubRemoteControl::apply_water_safety(float &p_roll_u, float &p_pitch_u,
 
         sensor_mainbrain = true; // Force mainbrain true Needed for RAMI-2025
 
-        if (!sensor_mainbrain && !sensor_power) // Limit to 20 percent if no water detected
+        if (!sensor_mainbrain && !sensor_power) // Limit to 40 percent if no water detected
         {
-                safety_factor = 0.2f;
+                safety_factor = 0.4f;
         } else if (!sensor_mainbrain && sensor_power) // AUV is on the water
         {
-                safety_factor = 0.3f;
+                safety_factor = 0.4f;
         } else if (sensor_mainbrain &&
                    sensor_power) // Water is detected above (mainbrain) and below (power) AUV. Under water
         {
-                safety_factor = 1.0f; // Full power1.0f
+                safety_factor = 1.0f; // Full power 1.0f
         } else if (!sensor_power) {   // Needed for for-2025 because we don't have the sensor in the mainbrain
-                safety_factor = 0.2f;
+                safety_factor = 0.4f;
         }
 
         p_roll_u *= safety_factor;
