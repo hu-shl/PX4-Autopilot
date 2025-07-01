@@ -58,18 +58,18 @@ RobosubArmControl::~RobosubArmControl() {
 void RobosubArmControl::Run() {
 	perf_begin(_loop_perf);
 
-	if(_drone_task_sub.update(&_drone_task));
+	if(_drone_task_sub.update(&_drone_task))
 	{
 		_drone_task_sub.copy(&_drone_task);
 		teleoperated_arm();
 	}
 
 
-	perf_end(_loop_perf);
+		perf_end(_loop_perf);
 }
 
 void RobosubArmControl::teleoperated_arm() {
-	if(_drone_task.task = TELEARM)
+	if(_drone_task.task == TELEARM)
 	{
 		if (_input_rc_sub.update(&_input_rc)) {
 			_input_rc_sub.copy(&_input_rc);

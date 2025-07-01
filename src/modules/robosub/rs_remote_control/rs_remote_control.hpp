@@ -151,13 +151,15 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 
         uORB::Publication<drone_task_s> _drone_task_pub{ORB_ID(drone_task)};
 	uORB::Publication<vehicle_command_s> _vehicle_command_pub{ORB_ID(vehicle_command)};
+        uORB::Publication<buoyancy_ctrl_s> _buoyancy_ctrl_pub{ORB_ID(buoyancy_ctrl)};
 
         drone_task_s _drone_task{};
         input_rc_s _input_rc{};
 	vehicle_command_s _vehicle_command_arm{};
 
 	status_s _status_msg{};
-	vehicle_command_s _vehicle_command_arm{};
+        buoyancy_ctrl_s _buoyancy_ctrl{};
+
 
         float normalized[8];
         float range = 1.0f;
