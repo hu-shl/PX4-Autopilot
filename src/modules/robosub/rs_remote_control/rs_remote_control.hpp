@@ -69,30 +69,29 @@ using namespace time_literals;
 
 extern "C" __EXPORT int rs_remote_control_main(int argc, char *argv[]);
 
+class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
+                             public ModuleParams,
+                             public px4::ScheduledWorkItem {
+      public:
+#define TASK_REMOTECONTROLLED 0b000
+#define TASK_RC_PID 0b001
+#define TASK_DPGOAL 0b010
+#define TASK_DPTELEARM 0b011
+#define TASK_SEARCHBUOY 0b100
+#define TASK_SEARCHTUBE 0b101
+#define TASK_TASK2 0b110
+#define TASK_TASK1 0b111
 
- class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,  public ModuleParams, public px4::ScheduledWorkItem
- {
- public:
-
-        #define TASK_REMOTECONTROLLED  0b000
-        #define TASK_BUOYANCYCTRL       0b001
-        #define TASK_DPGOAL             0b010
-        #define TASK_DPTELEARM          0b011
-        #define TASK_SEARCHBUOY         0b100
-        #define TASK_SEARCHTUBE         0b101
-        #define TASK_TASK2              0b110
-        #define TASK_TASK1              0b111
-
-
-        enum MotorID {
-                MOTOR_FORWARDS1 = 101,
-                MOTOR_FORWARDS2 = 106,
-                MOTOR_UP1 = 102,
-                MOTOR_UP2 = 104,
-                MOTOR_UP3 = 103,
-                MOTOR_SIDE1 = 105,
-                MOTOR_SIDE2 = 107
-        };
+        // RAMI-2025
+        // enum MotorID {
+        //         MOTOR_FORWARDS1 = 101,
+        //         MOTOR_FORWARDS2 = 106,
+        //         MOTOR_UP1 = 102,
+        //         MOTOR_UP2 = 104,
+        //         MOTOR_UP3 = 103,
+        //         MOTOR_SIDE1 = 105,
+        //         MOTOR_SIDE2 = 107
+        // };
 
         RobosubRemoteControl();
         ~RobosubRemoteControl();

@@ -1,7 +1,7 @@
 uint64 timestamp
 
 uint8 TASK_REMOTECONTROLLED 	= 0	# completely remote controlled
-uint8 TASK_BUOYANCYCRTL 	= 1	# buoyancy tanks remote controlled
+uint8 TASK_RC_PID 	        = 1	# Remote controlled + PID mode
 uint8 TASK_DPGOAL	 	= 2	# change the goal position
 uint8 TASK_DPTELEARM 		= 3	# complete robot arm control
 uint8 TASK_SEARCHBUOY 		= 4	# buoy search pattern

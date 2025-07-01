@@ -1,0 +1,350 @@
+module_name: rs_pos_control
+
+parameters:
+  - group: Robosub Position Control PID Gains
+    definitions:
+      RS_PID1_X_P:
+        description:
+          short: PID1 X axis P gain
+        type: float
+        default: 0.0
+      RS_PID1_X_I:
+        description:
+          short: PID1 X axis I gain
+        type: float
+        default: 0.0
+      RS_PID1_X_D:
+        description:
+          short: PID1 X axis D gain
+        type: float
+        default: 0.0
+      RS_PID1_X_I_LIM:
+        description:
+          short: PID1 X axis I limit
+        type: float
+        default: 0.0
+      RS_PID1_X_OP_LIM:
+        description:
+          short: PID1 X axis output limit
+        type: float
+        default: 0.0
+      RS_PID1_X_OP_SCL:
+        description:
+          short: PID1 X axis output scale
+        type: float
+        default: 0.0
+      RS_PID2_X_P:
+        description:
+          short: PID2 X axis P gain
+        type: float
+        default: 0.0
+      RS_PID2_X_I:
+        description:
+          short: PID2 X axis I gain
+        type: float
+        default: 0.0
+      RS_PID2_X_D:
+        description:
+          short: PID2 X axis D gain
+        type: float
+        default: 0.0
+      RS_PID2_X_I_LIM:
+        description:
+          short: PID2 X axis I limit
+        type: float
+        default: 0.0
+      RS_PID2_X_OP_SCL:
+        description:
+          short: PID2 X axis output scale
+        type: float
+        default: 0.0
+      RS_PID1_Y_P:
+        description:
+          short: PID1 Y axis P gain
+        type: float
+        default: 0.0
+      RS_PID1_Y_I:
+        description:
+          short: PID1 Y axis I gain
+        type: float
+        default: 0.0
+      RS_PID1_Y_D:
+        description:
+          short: PID1 Y axis D gain
+        type: float
+        default: 0.0
+      RS_PID1_Y_I_LIM:
+        description:
+          short: PID1 Y axis I limit
+        type: float
+        default: 0.0
+      RS_PID1_Y_OP_LIM:
+        description:
+          short: PID1 Y axis output limit
+        type: float
+        default: 0.0
+      RS_PID1_Y_OP_SCL:
+        description:
+          short: PID1 Y axis output scale
+        type: float
+        default: 0.0
+      RS_PID2_Y_P:
+        description:
+          short: PID2 Y axis P gain
+        type: float
+        default: 0.0
+      RS_PID2_Y_I:
+        description:
+          short: PID2 Y axis I gain
+        type: float
+        default: 0.0
+      RS_PID2_Y_D:
+        description:
+          short: PID2 Y axis D gain
+        type: float
+        default: 0.0
+      RS_PID2_Y_I_LIM:
+        description:
+          short: PID2 Y axis I limit
+        type: float
+        default: 0.0
+      RS_PID2_Y_OP_SCL:
+        description:
+          short: PID2 Y axis output scale
+        type: float
+        default: 0.0
+      RS_PID1_Z_P:
+        description:
+          short: PID1 Z axis P gain
+        type: float
+        default: 0.0
+      RS_PID1_Z_I:
+        description:
+          short: PID1 Z axis I gain
+        type: float
+        default: 0.0
+      RS_PID1_Z_D:
+        description:
+          short: PID1 Z axis D gain
+        type: float
+        default: 0.0
+      RS_PID1_Z_I_LIM:
+        description:
+          short: PID1 Z axis I limit
+        type: float
+        default: 0.0
+      RS_PID1_Z_OP_LIM:
+        description:
+          short: PID1 Z axis output limit
+        type: float
+        default: 0.0
+      RS_PID1_Z_OP_SCL:
+        description:
+          short: PID1 Z axis output scale
+        type: float
+        default: 0.0
+      RS_PID2_Z_P:
+        description:
+          short: PID2 Z axis P gain
+        type: float
+        default: 0.0
+      RS_PID2_Z_I:
+        description:
+          short: PID2 Z axis I gain
+        type: float
+        default: 0.0
+      RS_PID2_Z_D:
+        description:
+          short: PID2 Z axis D gain
+        type: float
+        default: 0.0
+      RS_PID2_Z_I_LIM:
+        description:
+          short: PID2 Z axis I limit
+        type: float
+        default: 0.0
+      RS_PID2_Z_OP_SCL:
+        description:
+          short: PID2 Z axis output scale
+        type: float
+        default: 0.0
+      RS_PID1_A_P:
+        description:
+          short: PID1 Pitch axis P gain
+        type: float
+        default: 1.0
+      RS_PID1_A_I:
+        description:
+          short: PID1 Pitch axis I gain
+        type: float
+        default: 0.1
+      RS_PID1_A_D:
+        description:
+          short: PID1 Pitch axis D gain
+        type: float
+        default: 0.5
+      RS_PID1_A_I_LIM:
+        description:
+          short: PID1 Pitch axis I limit
+        type: float
+        default: 0.0
+      RS_PID1_A_OP_LIM:
+        description:
+          short: PID1 Pitch axis output limit
+        type: float
+        default: 0.0
+      RS_PID1_A_OP_SCL:
+        description:
+          short: PID1 Pitch axis output scale
+        type: float
+        default: 0.0
+      RS_PID2_A_P:
+        description:
+          short: PID2 Pitch axis P gain
+        type: float
+        default: 0.0
+      RS_PID2_A_I:
+        description:
+          short: PID2 Pitch axis I gain
+        type: float
+        default: 0.0
+      RS_PID2_A_D:
+        description:
+          short: PID2 Pitch axis D gain
+        type: float
+        default: 0.0
+      RS_PID2_A_I_LIM:
+        description:
+          short: PID2 Pitch axis I limit
+        type: float
+        default: 0.0
+      RS_PID2_A_OP_SCL:
+        description:
+          short: PID2 Pitch axis output scale
+        type: float
+        default: 0.0
+      RS_PID1_B_P:
+        description:
+          short: PID1 Roll axis P gain
+        type: float
+        default: 0.0
+      RS_PID1_B_I:
+        description:
+          short: PID1 Roll axis I gain
+        type: float
+        default: 0.0
+      RS_PID1_B_D:
+        description:
+          short: PID1 Roll axis D gain
+        type: float
+        default: 0.0
+      RS_PID1_B_I_LIM:
+        description:
+          short: PID1 Roll axis I limit
+        type: float
+        default: 0.0
+      RS_PID1_B_OP_LIM:
+        description:
+          short: PID1 Roll axis output limit
+        type: float
+        default: 0.0
+      RS_PID1_B_OP_SCL:
+        description:
+          short: PID1 Roll axis output scale
+        type: float
+        default: 0.0
+      RS_PID2_B_P:
+        description:
+          short: PID2 Roll axis P gain
+        type: float
+        default: 0.0
+      RS_PID2_B_I:
+        description:
+          short: PID2 Roll axis I gain
+        type: float
+        default: 0.0
+      RS_PID2_B_D:
+        description:
+          short: PID2 Roll axis D gain
+        type: float
+        default: 0.0
+      RS_PID2_B_I_LIM:
+        description:
+          short: PID2 Roll axis I limit
+        type: float
+        default: 0.0
+      RS_PID2_B_OP_SCL:
+        description:
+          short: PID2 Roll axis output scale
+        type: float
+        default: 0.0
+      RS_PID1_C_P:
+        description:
+          short: PID1 Yaw axis P gain
+        type: float
+        default: 0.0
+      RS_PID1_C_I:
+        description:
+          short: PID1 Yaw axis I gain
+        type: float
+        default: 0.0
+      RS_PID1_C_D:
+        description:
+          short: PID1 Yaw axis D gain
+        type: float
+        default: 0.0
+      RS_PID1_C_I_LIM:
+        description:
+          short: PID1 Yaw axis I limit
+        type: float
+        default: 0.0
+      RS_PID1_C_OP_LIM:
+        description:
+          short: PID1 Yaw axis output limit
+        type: float
+        default: 0.0
+      RS_PID1_C_OP_SCL:
+        description:
+          short: PID1 Yaw axis output scale
+        type: float
+        default: 0.0
+      RS_PID2_C_P:
+        description:
+          short: PID2 Yaw axis P gain
+        type: float
+        default: 0.0
+      RS_PID2_C_I:
+        description:
+          short: PID2 Yaw axis I gain
+        type: float
+        default: 0.0
+      RS_PID2_C_D:
+        description:
+          short: PID2 Yaw axis D gain
+        type: float
+        default: 0.0
+      RS_PID2_C_I_LIM:
+        description:
+          short: PID2 Yaw axis I limit
+        type: float
+        default: 0.0
+      RS_PID2_C_OP_SCL:
+        description:
+          short: PID2 Yaw axis output scale
+        type: float
+        default: 0.0
+      RS_PID2_OP_LIM:
+        description:
+          short: PID2 output limit for all axes
+        type: float
+        default: 0.0
+      RS_POS_CTRL_FREQ:
+        description:
+          short: Position control loop frequency Hz
+        type: int
+        default: 100
+      RS_FORCE_PARAMS:
+        description:
+          short: Force parameter update
+        type: int
+        default: 0
