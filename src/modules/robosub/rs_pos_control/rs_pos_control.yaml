@@ -7,17 +7,17 @@ parameters:
         description:
           short: PID1 X axis P gain
         type: float
-        default: 0.0
+        default: 1.0
       RS_PID1_X_I:
         description:
           short: PID1 X axis I gain
         type: float
-        default: 0.0
+        default: 0.02
       RS_PID1_X_D:
         description:
           short: PID1 X axis D gain
         type: float
-        default: 0.0
+        default: 0.5
       RS_PID1_X_I_LIM:
         description:
           short: PID1 X axis I limit
@@ -62,17 +62,17 @@ parameters:
         description:
           short: PID1 Y axis P gain
         type: float
-        default: 0.0
+        default: 1.0
       RS_PID1_Y_I:
         description:
           short: PID1 Y axis I gain
         type: float
-        default: 0.0
+        default: 0.02
       RS_PID1_Y_D:
         description:
           short: PID1 Y axis D gain
         type: float
-        default: 0.0
+        default: 0.5
       RS_PID1_Y_I_LIM:
         description:
           short: PID1 Y axis I limit
@@ -117,17 +117,17 @@ parameters:
         description:
           short: PID1 Z axis P gain
         type: float
-        default: 0.0
+        default: 1.0
       RS_PID1_Z_I:
         description:
           short: PID1 Z axis I gain
         type: float
-        default: 0.0
+        default: 0.02
       RS_PID1_Z_D:
         description:
           short: PID1 Z axis D gain
         type: float
-        default: 0.0
+        default: 0.5
       RS_PID1_Z_I_LIM:
         description:
           short: PID1 Z axis I limit

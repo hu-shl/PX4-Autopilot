@@ -255,16 +255,22 @@ void RobosubPosControl::Run() {
                         break;                          // RAMI-2025
                 case _drone_task.TASK_RC_PID:           //  RAMI-2025 Remote controlled Pitch stabilisation
 
+			configure_axis(X_Axis, PID_MODE_DISABLED); // disable x control
+			configure_axis(Y_Axis, PID_MODE_DISABLED); // disable x control
+			configure_axis(Z_Axis, PID_MODE_DISABLED); // disable z control
+
 			// Set x, y, z with velocity
-                        configure_axis(X_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vx,
-                                       &_trajectory_setpoint.velocity[0]); // x
-                        configure_axis(Y_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vy,
-                                       &_trajectory_setpoint.velocity[1]); // y
-                        configure_axis(Z_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vz,
-                                       &_trajectory_setpoint.velocity[2]); // z
+                        // configure_axis(X_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vx,
+                        //                &_trajectory_setpoint.velocity[0]); // x
+                        // configure_axis(Y_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vy,
+                        //                &_trajectory_setpoint.velocity[1]); // y
+                        // configure_axis(Z_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vz,
+                        //                &_trajectory_setpoint.velocity[2]); // z
                         // configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero); // roll
-			configure_axis(Roll_Axis, PID_MODE_DISABLED); // disbale roll control
+
+			configure_axis(Roll_Axis, PID_MODE_DISABLED); // disable roll control
                         configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero); // pitch
+
                         // configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(),
                         //                &_trajectory_setpoint.yaw); // yaw
 			configure_axis(Yaw_Axis, PID_MODE_DISABLED); // disable raw

@@ -113,7 +113,7 @@ void RobosubRemoteControl::Run() {
 
         float roll_u, pitch_u, yaw_u = 0.0f;
         float thrust_x, thrust_y, thrust_z = 0.0f;
-	float vel_x, vel_y, vel_z = 0.0f; // velocity in TASK_RC_PID
+	// float vel_x, vel_y, vel_z = 0.0f; // velocity in TASK_RC_PID
 
         // Rami-2025 bypass leakage safety
         taskStat(); // Set bitReg to capture which task to handle
@@ -137,24 +137,30 @@ void RobosubRemoteControl::Run() {
         } else if (bitReg == TASK_RC_PID) // Perform remote controlled PID
         {
 		trajectory_setpoint_s trajectory_setpoint{};
+		float PLCHLDR; //
+
+		// set thrust
+                thrust_x = normalized[0];
+                thrust_y = normalized[2];
+                thrust_z = normalized[1];
+
                 // Set desired roll and velocity (x,y,z)
                 roll_u = 0.0f;
                 // pitch_u = normalized[3];
                 yaw_u = 0.0f;
-                vel_x = normalized[0]; // velocity x
-                vel_y = normalized[2]; // velocity y
-                vel_z = normalized[1]; // velocity z
 
-		apply_water_safety(roll_u, pitch_u, yaw_u, vel_x, vel_y, vel_z);
+		// Apply water detection safety
+		apply_water_safety(roll_u, pitch_u, yaw_u, thrust_x, thrust_y, thrust_z);
+                constrain_actuator_commands(PLCHLDR, PLCHLDR, PLCHLDR, thrust_x, thrust_y, thrust_z);
+                publish_thrust_setpoint(); // keep raw thrust xyz
 
-		// publish velocity setpoints
-		trajectory_setpoint.timestamp = hrt_absolute_time();
-		trajectory_setpoint.velocity[0] = vel_x;  // set velocity x
-		trajectory_setpoint.velocity[1] = vel_y; // set velocity y
-		trajectory_setpoint.velocity[2] = vel_z; // set velocity z
-		trajectory_setpoint.yaw = yaw_u;
-
-		trajectory_setpoint_pub.publish(trajectory_setpoint);
+		// PID future? publish velocity setpoints
+		// trajectory_setpoint.timestamp = hrt_absolute_time();
+		// trajectory_setpoint.velocity[0] = vel_x;  // set velocity x
+		// trajectory_setpoint.velocity[1] = vel_y; // set velocity y
+		// trajectory_setpoint.velocity[2] = vel_z; // set velocity z
+		// trajectory_setpoint.yaw = yaw_u;
+		// trajectory_setpoint_pub.publish(trajectory_setpoint); // publish setpoint
         }
 
         // if (!_status_sub.update(&_status_msg) && status_safe) {
