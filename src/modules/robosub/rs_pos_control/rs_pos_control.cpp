@@ -51,19 +51,14 @@
  * @ingroup apps
  */
 RobosubPosControl::RobosubPosControl()
-    : ModuleParams(nullptr),
-      ScheduledWorkItem(MODULE_NAME,
-                        px4::wq_configurations::nav_and_controllers),
+    : ModuleParams(nullptr), ScheduledWorkItem(MODULE_NAME, px4::wq_configurations::nav_and_controllers),
 
       /* performance counters */
-      _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": cycle"))
-{
-}
+      _loop_perf(perf_alloc(PC_ELAPSED, MODULE_NAME ": cycle")) {}
 
 RobosubPosControl::~RobosubPosControl() { perf_free(_loop_perf); }
 
-bool RobosubPosControl::init()
-{
+bool RobosubPosControl::init() {
         // initialize parameters
         parameters_update(true);
 
@@ -73,11 +68,9 @@ bool RobosubPosControl::init()
         return true;
 }
 
-int RobosubPosControl::parameters_update(bool force)
-{
+int RobosubPosControl::parameters_update(bool force) {
         // check for parameter updates
-        if (_parameter_update_sub.updated() || force)
-        {
+        if (_parameter_update_sub.updated() || force) {
                 // clear update
                 parameter_update_s update;
                 _parameter_update_sub.copy(&update);
@@ -96,10 +89,7 @@ int RobosubPosControl::parameters_update(bool force)
  *  @param thrust_y The thrust setpoint in the y direction
  *  @param thrust_z The thrust setpoint in the z direction
  */
-void RobosubPosControl::publish_thrust_setpoint(const float thrust_x,
-                                                const float thrust_y,
-                                                const float thrust_z)
-{
+void RobosubPosControl::publish_thrust_setpoint(const float thrust_x, const float thrust_y, const float thrust_z) {
         vehicle_thrust_setpoint_s vehicle_thrust_setpoint = {};
         vehicle_thrust_setpoint.timestamp = hrt_absolute_time();
 
@@ -116,10 +106,8 @@ void RobosubPosControl::publish_thrust_setpoint(const float thrust_x,
  *  @param pitch The pitch setpoint
  *  @param yaw The yaw setpoint
  */
-void RobosubPosControl::publish_torque_setpoint(const float torque_roll,
-                                                const float torque_pitch,
-                                                const float torque_yaw)
-{
+void RobosubPosControl::publish_torque_setpoint(const float torque_roll, const float torque_pitch,
+                                                const float torque_yaw) {
         vehicle_torque_setpoint_s vehicle_torque_setpoint = {};
         vehicle_torque_setpoint.timestamp = hrt_absolute_time();
 
@@ -130,13 +118,11 @@ void RobosubPosControl::publish_torque_setpoint(const float torque_roll,
         _torque_setpoint_pub.publish(vehicle_torque_setpoint);
 }
 
-void RobosubPosControl::Run()
-{
+void RobosubPosControl::Run() {
         PX4_INFO("RobosubPosControl::Run()");
 
         // only run the task if not to exit
-        if (should_exit())
-        {
+        if (should_exit()) {
                 exit_and_cleanup();
                 return;
         }
@@ -145,8 +131,7 @@ void RobosubPosControl::Run()
         perf_begin(_loop_perf);
 
         // update parameters if needed
-        if (parameters_update(_force_param.get()))
-        {
+        if (parameters_update(_force_param.get())) {
                 X_Axis.PID1_P_gain = _pid1_gain_x_p.get();
                 X_Axis.PID1_I_gain = _pid1_gain_x_i.get();
                 X_Axis.PID1_D_gain = _pid1_gain_x_d.get();
@@ -227,59 +212,70 @@ void RobosubPosControl::Run()
         }
 
         _drone_task_sub.update(&_drone_task); // current mode of the drone
-        _status_sub.update(&_status); // system status
+        _status_sub.update(&_status);         // system status
 
-        _vehicle_local_position_sub.update(&_vehicle_local_position); // x, y, z position and velocity
-        _vehicle_attitude_sub.update(&_vehicle_attitude); // roll, pitch, yaw attitude
+        _vehicle_local_position_sub.update(&_vehicle_local_position);     // x, y, z position and velocity
+        _vehicle_attitude_sub.update(&_vehicle_attitude);                 // roll, pitch, yaw attitude
         _vehicle_angular_velocity_sub.update(&_vehicle_angular_velocity); // vehicle setpoint for position and attitude
 
         matrix::Quatf current_attitude_quat(_vehicle_attitude.q);
         matrix::Eulerf current_attitude(current_attitude_quat.dcm_z());
 
-        if (_status_sub.update(&_status))
-        {
+        if (_status_sub.update(&_status)) {
                 // a problem has occured, follow the trajectory setpoint
-                switch(_status.status)
-                {
-                        case status_s::STATUS_CRITICAL_BATTERY:
-                                // disable all motors
-                                configure_axis(X_Axis, PID_MODE_DISABLED);
-                                configure_axis(Y_Axis, PID_MODE_DISABLED);
-                                configure_axis(Z_Axis, PID_MODE_DISABLED);
-                                configure_axis(Roll_Axis, PID_MODE_DISABLED);
-                                configure_axis(Pitch_Axis, PID_MODE_DISABLED);
-                                configure_axis(Yaw_Axis, PID_MODE_DISABLED);
-                        break;
-
-                        case status_s::STATUS_LOW_BATTERY:
-                        case status_s::STATUS_HIGH_VALUE_DETECTED:
-                                // follow the trajectory setpoint
-                                configure_axis(X_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.x, &_trajectory_setpoint.position[0]);
-                                configure_axis(Y_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.y, &_trajectory_setpoint.position[1]);
-                                configure_axis(Z_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.z, &_trajectory_setpoint.position[2]);
-                                configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero);
-                                configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
-                                configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(), &_trajectory_setpoint.yaw);
-                        break;
-                }
-        }
-        else
-        {
-                switch (_drone_task.task)
-                {
-                case _drone_task.TASK_REMOTECONTROLLED: // RAW Remote Control
-			break; // RAMI-2025
-                case _drone_task.TASK_RC_PID:     //  RAMI-2025 Remote controlled Pitch stabilisation
-
-                        configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
-
-			// Disable other axis
+                switch (_status.status) {
+                case status_s::STATUS_CRITICAL_BATTERY:
+                        // disable all motors
                         configure_axis(X_Axis, PID_MODE_DISABLED);
                         configure_axis(Y_Axis, PID_MODE_DISABLED);
                         configure_axis(Z_Axis, PID_MODE_DISABLED);
                         configure_axis(Roll_Axis, PID_MODE_DISABLED);
-                        // configure_axis(Pitch_Axis, PID_MODE_DISABLED); // RAMI-2025 enable only pitch position
+                        configure_axis(Pitch_Axis, PID_MODE_DISABLED);
                         configure_axis(Yaw_Axis, PID_MODE_DISABLED);
+                        break;
+
+                case status_s::STATUS_LOW_BATTERY:
+                case status_s::STATUS_HIGH_VALUE_DETECTED:
+                        // follow the trajectory setpoint
+                        configure_axis(X_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.x,
+                                       &_trajectory_setpoint.position[0]);
+                        configure_axis(Y_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.y,
+                                       &_trajectory_setpoint.position[1]);
+                        configure_axis(Z_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.z,
+                                       &_trajectory_setpoint.position[2]);
+                        configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero);
+                        configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
+                        configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(),
+                                       &_trajectory_setpoint.yaw);
+                        break;
+                }
+        } else {
+                switch (_drone_task.task) {
+                case _drone_task.TASK_REMOTECONTROLLED: // RAW Remote Control
+                        break;                          // RAMI-2025
+                case _drone_task.TASK_RC_PID:           //  RAMI-2025 Remote controlled Pitch stabilisation
+
+			// Set x, y, z with velocity
+                        configure_axis(X_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vx,
+                                       &_trajectory_setpoint.velocity[0]); // x
+                        configure_axis(Y_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vy,
+                                       &_trajectory_setpoint.velocity[1]); // y
+                        configure_axis(Z_Axis, PID_MODE_VELOCITY, true, &_vehicle_local_position.vz,
+                                       &_trajectory_setpoint.velocity[2]); // z
+                        // configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero); // roll
+			configure_axis(Roll_Axis, PID_MODE_DISABLED); // disbale roll control
+                        configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero); // pitch
+                        // configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(),
+                        //                &_trajectory_setpoint.yaw); // yaw
+			configure_axis(Yaw_Axis, PID_MODE_DISABLED); // disable raw
+
+                        // Disable other axis // edited RAMI-2025
+                        // configure_axis(X_Axis, PID_MODE_DISABLED);
+                        // configure_axis(Y_Axis, PID_MODE_DISABLED);
+                        // configure_axis(Z_Axis, PID_MODE_DISABLED);
+                        // configure_axis(Roll_Axis, PID_MODE_DISABLED);
+                        // configure_axis(Pitch_Axis, PID_MODE_DISABLED);
+                        // configure_axis(Yaw_Axis, PID_MODE_DISABLED);
 
                         break;
 
@@ -288,44 +284,32 @@ void RobosubPosControl::Run()
                         // setup all axis for position control
                         // keep attitude setpoints at 0
 
-                        configure_axis(X_Axis, PID_MODE_POSITION, true,
-                                       &_vehicle_local_position.x,
+                        configure_axis(X_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.x,
                                        &_trajectory_setpoint.position[0]);
-                        configure_axis(Y_Axis, PID_MODE_POSITION, true,
-                                       &_vehicle_local_position.y,
+                        configure_axis(Y_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.y,
                                        &_trajectory_setpoint.position[1]);
-                        configure_axis(Z_Axis, PID_MODE_POSITION, true,
-                                       &_vehicle_local_position.z,
+                        configure_axis(Z_Axis, PID_MODE_POSITION, true, &_vehicle_local_position.z,
                                        &_trajectory_setpoint.position[2]);
-                        configure_axis(Roll_Axis, PID_MODE_POSITION, true,
-                                       &current_attitude.phi(), &zero);
-                        configure_axis(Pitch_Axis, PID_MODE_POSITION, true,
-                                       &current_attitude.theta(), &zero);
-                        configure_axis(Yaw_Axis, PID_MODE_POSITION, true,
-                                       &current_attitude.psi(),
+                        configure_axis(Roll_Axis, PID_MODE_POSITION, true, &current_attitude.phi(), &zero);
+                        configure_axis(Pitch_Axis, PID_MODE_POSITION, true, &current_attitude.theta(), &zero);
+                        configure_axis(Yaw_Axis, PID_MODE_POSITION, true, &current_attitude.psi(),
                                        &_trajectory_setpoint.yaw);
                         break;
 
                 case _drone_task.TASK_DPTELEARM: // Remote Controlled arm
-                case _drone_task.TASK_DPGOAL: // Remote Controlled Positioning
-                case _drone_task.TASK_TASK2:  // default initialisation
+                case _drone_task.TASK_DPGOAL:    // Remote Controlled Positioning
+                case _drone_task.TASK_TASK2:     // default initialisation
                 case _drone_task.TASK_TASK1:
 
                 default: // in default state, keep position.
 
                         // the setpoint is not used, so we can use zero
-                        configure_axis(X_Axis, PID_MODE_HOLD_POSITION, false,
-                                       &_vehicle_local_position.x, &zero);
-                        configure_axis(Y_Axis, PID_MODE_HOLD_POSITION, false,
-                                       &_vehicle_local_position.y, &zero);
-                        configure_axis(Z_Axis, PID_MODE_HOLD_POSITION, false,
-                                       &_vehicle_local_position.z, &zero);
-                        configure_axis(Roll_Axis, PID_MODE_HOLD_POSITION, false,
-                                       &current_attitude.phi(), &zero);
-                        configure_axis(Pitch_Axis, PID_MODE_HOLD_POSITION,
-                                       false, &current_attitude.theta(), &zero);
-                        configure_axis(Yaw_Axis, PID_MODE_HOLD_POSITION, false,
-                                       &current_attitude.psi(), &zero);
+                        configure_axis(X_Axis, PID_MODE_HOLD_POSITION, false, &_vehicle_local_position.x, &zero);
+                        configure_axis(Y_Axis, PID_MODE_HOLD_POSITION, false, &_vehicle_local_position.y, &zero);
+                        configure_axis(Z_Axis, PID_MODE_HOLD_POSITION, false, &_vehicle_local_position.z, &zero);
+                        configure_axis(Roll_Axis, PID_MODE_HOLD_POSITION, false, &current_attitude.phi(), &zero);
+                        configure_axis(Pitch_Axis, PID_MODE_HOLD_POSITION, false, &current_attitude.theta(), &zero);
+                        configure_axis(Yaw_Axis, PID_MODE_HOLD_POSITION, false, &current_attitude.psi(), &zero);
                         break;
                 }
         }
@@ -343,8 +327,7 @@ void RobosubPosControl::Run()
         // publish the torque setpoint
         publish_torque_setpoint(Roll_Axis.pid_output, Pitch_Axis.pid_output, Yaw_Axis.pid_output);
 
-        ScheduleDelayed(
-            1000000 / _pid_frequency.get()); // Schedule next run at the desired frequency
+        ScheduleDelayed(1000000 / _pid_frequency.get()); // Schedule next run at the desired frequency
 
         perf_end(_loop_perf);
 }
@@ -360,29 +343,23 @@ void RobosubPosControl::Run()
  * @param argv Argument vector
  * @return Exit status
  */
-int RobosubPosControl::task_spawn(int argc, char *argv[])
-{
+int RobosubPosControl::task_spawn(int argc, char *argv[]) {
         RobosubPosControl *instance = new RobosubPosControl();
 
-        if (instance)
-        {
+        if (instance) {
                 _object.store(instance);
                 _task_id = task_id_is_work_queue;
 
-                if (instance->init())
-                {
+                if (instance->init()) {
                         return PX4_OK;
                 }
-        }
-        else
-        {
+        } else {
                 PX4_ERR("alloc failed");
         }
 
         delete instance;
         _object.store(nullptr);
         _task_id = -1;
-
 
         return PX4_ERROR;
 }
@@ -394,10 +371,7 @@ int RobosubPosControl::task_spawn(int argc, char *argv[])
  * @param argv Argument vector
  * @return Exit status
  */
-int RobosubPosControl::custom_command(int argc, char *argv[])
-{
-        return print_usage("unknown command");
-}
+int RobosubPosControl::custom_command(int argc, char *argv[]) { return print_usage("unknown command"); }
 
 /**
  * @brief Print usage information for the Robosub Position Control module
@@ -405,10 +379,8 @@ int RobosubPosControl::custom_command(int argc, char *argv[])
  * @param reason Optional reason for printing usage
  * @return Exit status
  */
-int RobosubPosControl::print_usage(const char *reason)
-{
-        if (reason)
-        {
+int RobosubPosControl::print_usage(const char *reason) {
+        if (reason) {
                 PX4_WARN("%s\n", reason);
         }
 
@@ -434,15 +406,10 @@ Has no commands for now.
  * @param argv Argument vector
  * @return Exit status
  */
-int rs_pos_control_main(int argc, char *argv[])
-{
-        return RobosubPosControl::main(argc, argv);
-}
+int rs_pos_control_main(int argc, char *argv[]) { return RobosubPosControl::main(argc, argv); }
 
-void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
-{
-        if(axis.PID_mode <= PID_MODE_DISABLED || axis.PID_mode > PID_MODE_HOLD_VELOCITY)
-        {
+void RobosubPosControl::run_axis_pid(AxisPID_s &axis) {
+        if (axis.PID_mode <= PID_MODE_DISABLED || axis.PID_mode > PID_MODE_HOLD_VELOCITY) {
                 // if axis is in an unknown mode, do not run PID control
                 axis.pid_output = 0.0f;
                 axis.PID_mode = PID_MODE_DISABLED;
@@ -458,8 +425,7 @@ void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
         axis.PID2.setIntegralLimit(axis.PID2_I_limit);
         axis.PID2.setGains(axis.PID2_P_gain, axis.PID2_I_gain, axis.PID2_D_gain);
 
-        if(!(axis.PID_mode == PID_MODE_HOLD_POSITION || axis.PID_mode == PID_MODE_HOLD_VELOCITY))
-        {
+        if (!(axis.PID_mode == PID_MODE_HOLD_POSITION || axis.PID_mode == PID_MODE_HOLD_VELOCITY)) {
                 // only update the setpoint if we are not in hold mode
                 axis._setpoint = *axis.setpoint_ptr;
         }
@@ -469,8 +435,7 @@ void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
         axis.last_run_time = hrt_absolute_time(); // update last run time
 
         // run first PID
-        if(axis.PID_mode == PID_MODE_POSITION || axis.PID_mode == PID_MODE_HOLD_POSITION)
-        {
+        if (axis.PID_mode == PID_MODE_POSITION || axis.PID_mode == PID_MODE_HOLD_POSITION) {
                 // set the setpoint
                 axis.PID1.setSetpoint(axis._setpoint);
 
@@ -480,10 +445,9 @@ void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
                 // scale and limit the output
                 PID1_output = scale_and_limit(PID1_output, axis.PID1_out_scale, axis.PID1_out_limit);
 
-                axis.PID2.setSetpoint(PID1_output); // set the output of the position PID as setpoint for the velocity PID
-        }
-        else
-        {
+                axis.PID2.setSetpoint(
+                    PID1_output); // set the output of the position PID as setpoint for the velocity PID
+        } else {
                 // if we are in velocity mode, we can directly set the setpoint for the velocity PID
                 axis.PID2.setSetpoint(axis._setpoint);
         }
@@ -491,12 +455,9 @@ void RobosubPosControl::run_axis_pid(AxisPID_s &axis)
         // update the velocity PID controller with the current feedback
         float PID2_output = axis.PID2.update(*axis.feedback_ptr, delta_time, true);
         axis.pid_output = scale_and_limit(PID2_output, axis.PID2_out_scale, axis.PID2_out_limit);
-
-
 }
 
-float RobosubPosControl::scale_and_limit(float value, float scale, float limit)
-{
+float RobosubPosControl::scale_and_limit(float value, float scale, float limit) {
         // scale the value
         value *= scale;
 
@@ -504,19 +465,15 @@ float RobosubPosControl::scale_and_limit(float value, float scale, float limit)
         return math::constrain(value, -limit, limit);
 }
 
-
 /**
  * @brief Configure an axis for PID control
  */
-void RobosubPosControl::configure_axis(AxisPID_s &axis, PIDMode_e mode, bool reset_on_change, float* feedback, float* setpoint)
-{
+void RobosubPosControl::configure_axis(AxisPID_s &axis, PIDMode_e mode, bool reset_on_change, float *feedback,
+                                       float *setpoint) {
         bool reset = false;
 
-        if((axis.PID_mode        != mode         ||
-           axis.feedback_ptr    != feedback     ||
-           axis.setpoint_ptr    != setpoint     ) &&
-           reset_on_change)
-        {
+        if ((axis.PID_mode != mode || axis.feedback_ptr != feedback || axis.setpoint_ptr != setpoint) &&
+            reset_on_change) {
                 // if anything changed, reset the PID controllers if reset_on_change is true
                 reset = true;
         }
@@ -526,15 +483,12 @@ void RobosubPosControl::configure_axis(AxisPID_s &axis, PIDMode_e mode, bool res
         axis.feedback_ptr = feedback;
         axis.setpoint_ptr = setpoint;
 
-        if(reset)
-        {
-        // reset the PID controllers if config changed
-        axis.PID1.resetDerivative();
-        axis.PID1.resetIntegral();
+        if (reset) {
+                // reset the PID controllers if config changed
+                axis.PID1.resetDerivative();
+                axis.PID1.resetIntegral();
 
-        axis.PID2.resetDerivative();
-        axis.PID2.resetIntegral();
+                axis.PID2.resetDerivative();
+                axis.PID2.resetIntegral();
         }
 }
-
-

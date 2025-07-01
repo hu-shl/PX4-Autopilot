@@ -64,6 +64,7 @@
 // Setpoints
 #include <uORB/topics/vehicle_thrust_setpoint.h> // vehicle thrust setpoint publication
 #include <uORB/topics/vehicle_torque_setpoint.h> // vehicle torque setpoint publication
+#include <uORB/topics/trajectory_setpoint.h> // RAMI-2025 velocity based controller and pitch stabilisation
 
 using namespace time_literals;
 
@@ -170,8 +171,11 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
         uORB::Publication<vehicle_torque_setpoint_s> _torque_setpoint_pub{
             ORB_ID(vehicle_torque_setpoint)}; // vehicle torque setpoint
 
+	uORB::Publication<trajectory_setpoint_s> trajectory_setpoint_pub{ORB_ID(trajectory_setpoint)};
+
         // vehicle_thrust_setpoint_s
         // vehicle_torque_setpoint_s
+
 
         drone_task_s _drone_task{};
         input_rc_s _input_rc{};

@@ -87,7 +87,7 @@ parameters:
         description:
           short: PID1 Y axis output scale
         type: float
-        default: 0.0
+        default: 0.7
       RS_PID2_Y_P:
         description:
           short: PID2 Y axis P gain
