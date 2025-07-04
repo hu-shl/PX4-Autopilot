@@ -274,11 +274,11 @@ void RobosubRemoteControl::receiver() {
                         robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
                         robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
 
-			robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
-			robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
+			robosub_motor_control.actuator_test(MOTOR_SIDE1, normalized[2], 0, false);
+			robosub_motor_control.actuator_test(MOTOR_SIDE2, -normalized[2], 0, false);
 			if (normalized[1] <= 0.1f && normalized[1] >= -0.1f) {
                                 if (normalized[3] <= 0.0f)
-				robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
+				robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3] * _param_tilt_modifier.get(), 0, false);
                                 else if (normalized[3] > 0.0f) {
                                         robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
                                         robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
