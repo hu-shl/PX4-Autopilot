@@ -159,6 +159,7 @@ class RobosubRemoteControl : public ModuleBase<RobosubRemoteControl>,
 
 	status_s _status_msg{};
         buoyancy_ctrl_s _buoyancy_ctrl{};
+        input_rc_s rc_data{};
 
 
         float normalized[8];

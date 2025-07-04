@@ -137,14 +137,16 @@ param set-default SENS_EN_INA228 1
 param set-default BAT1_N_CELLS 3
 param set-default BAT1_SOURCE 0
 
-rs_motor_control start
-rs_remote_control start
-control_allocator start
-land_detector start rover
+# rs_motor_control start
+# rs_remote_control start
+# control_allocator start
+# land_detector start rover
 
 rs_canfd_socket start
 rs_canfd_receiver start
 rs_canfd_sender start
 
-rs_pos_control start
-rs_status_monitor start
+# rs_pos_control start
+# rs_status_monitor start
+
+rs_arm_control start

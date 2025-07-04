@@ -125,10 +125,12 @@ void RobosubRemoteControl::Run() {
         RobosubArmControl robosub_arm_control;
 
         if (!_status_sub.update(&_status_msg) && status_safe) {
-                taskStat();
-                robosub_arm_control.teleoperated_arm();
+                if (_input_rc_sub.update(&rc_data)) {
+                        taskStat();
+                        robosub_arm_control.teleoperated_arm();
 
-                receiver();
+                        receiver();
+                }
         } else { // I don't agree with handling the emergency in here. I think it should be handled in the position controller.
 		status_safe = false;
 		if (_status_msg.status == status_s::STATUS_HIGH_VALUE_DETECTED) {
@@ -166,8 +168,6 @@ void RobosubRemoteControl::taskStat() {
         // if (_input_rc_sub.update(&_input_rc)) {
         if(1){
                 update1 = 1;
-                input_rc_s rc_data{};
-                _input_rc_sub.copy(&rc_data);
                 normalized[4] = (rc_data.values[4] - 1500) / 400.0f;
                 normalized[5] = (rc_data.values[5] - 1500) / 400.0f;
                 normalized[6] = (rc_data.values[6] - 1500) / 400.0f;
@@ -237,65 +237,64 @@ void RobosubRemoteControl::receiver() {
 
         if (update1) {
                 if (bitReg == TASK_REMOTECONTROLLED) {
-                        input_rc_s rc_data{};
-                        _input_rc_sub.copy(&rc_data);
+                        // _input_rc_sub.copy(&rc_data);
 
-                        if (_water_detection_sub.update(&_water_detection)) {
-                                sensor_mainbrain = _water_detection.mainbrain_sensor;
-                                sensor_power = _water_detection.power_module_sensor;
-                        }
-
-                        if (!sensor_mainbrain && !sensor_power) {
-                                range = 0.2f;
-
-                        } else if (!sensor_mainbrain && sensor_power) {
-                                range = 0.3f;
-
-                        } else if (sensor_mainbrain && sensor_power) {
-                                range = 1.0f;
-                        }
-                        // range = 1.0f; // Disable safety water detection force range to 100 perc
-
-                        // Normalize the rc data to a value between -1 and 1
-                        normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
-                        normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
-                        normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
-                        normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
-
-                        normalized[0] = math::constrain(normalized[0],  -range, range);
-			normalized[1] = math::constrain(normalized[1],  -range, range);
-			normalized[2] = math::constrain(normalized[2],  -range, range);
-			normalized[3] = math::constrain(normalized[3],  -range, range);
-
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
-
-                        robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[1], 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
-                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
-
-                        if (normalized[2] > 0.1f || normalized[2] < -0.1f) {
-                                robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
-                                robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
-                        } else {
-                                if (normalized[3] <= 0)
-				robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
-                                else if (normalized[3] >= 0) {
-                                        robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
-                                        robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
+                                if (_water_detection_sub.update(&_water_detection)) {
+                                        sensor_mainbrain = _water_detection.mainbrain_sensor;
+                                        sensor_power = _water_detection.power_module_sensor;
                                 }
-                        }
+
+                                if (!sensor_mainbrain && !sensor_power) {
+                                        range = 0.2f;
+
+                                } else if (!sensor_mainbrain && sensor_power) {
+                                        range = 0.3f;
+
+                                } else if (sensor_mainbrain && sensor_power) {
+                                        range = 1.0f;
+                                }
+                                // range = 1.0f; // Disable safety water detection force range to 100 perc
+
+                                // Normalize the rc data to a value between -1 and 1
+                                normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
+                                normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
+                                normalized[2] = (rc_data.values[3] - 1500) / 400.0f;
+                                normalized[3] = (rc_data.values[0] - 1500) / 400.0f;
+
+                                normalized[0] = math::constrain(normalized[0],  -range, range);
+                                normalized[1] = math::constrain(normalized[1],  -range, range);
+                                normalized[2] = math::constrain(normalized[2],  -range, range);
+                                normalized[3] = math::constrain(normalized[3],  -range, range);
+
+                                robosub_motor_control.actuator_test(MOTOR_FORWARDS1, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+                                robosub_motor_control.actuator_test(MOTOR_FORWARDS2, normalized[0] * _param_thrust_t200_limiter.get(), 0, false);
+
+                                robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[1], 0, false);
+                                robosub_motor_control.actuator_test(MOTOR_UP2, (normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+                                robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[1] * _param_front_up_motor_reduction.get()), 0, false);
+
+                                if (normalized[2] > 0.1f || normalized[2] < -0.1f) {
+                                        robosub_motor_control.actuator_test(MOTOR_SIDE1, -normalized[2], 0, false);
+                                        robosub_motor_control.actuator_test(MOTOR_SIDE2, normalized[2], 0, false);
+                                } else {
+                                        if (normalized[3] <= 0)
+                                        robosub_motor_control.actuator_test(MOTOR_UP1, -normalized[3], 0, false);
+                                        else if (normalized[3] >= 0) {
+                                                robosub_motor_control.actuator_test(MOTOR_UP2, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
+                                                robosub_motor_control.actuator_test(MOTOR_UP3, (-normalized[3] * (_param_tilt_modifier.get() * _param_front_up_motor_reduction.get())), 0, false);
+                                        }
+                                }
+                                update1 = 0;
+
+
                 }
-                update1 = 0;
+
         }
 }
 
 void RobosubRemoteControl::remote_buoyancy(){
 	if (update1) {
                 if (bitReg == TASK_BUOYANCYCTRL) {
-                        input_rc_s rc_data{};
-                        _input_rc_sub.copy(&rc_data);
-
 			normalized[0] = (rc_data.values[1] - 1500) / 400.0f;
                         normalized[1] = (rc_data.values[2] - 1500) / 400.0f;
                         normalized[2] = (rc_data.values[3] - 1500) / 400.0f;

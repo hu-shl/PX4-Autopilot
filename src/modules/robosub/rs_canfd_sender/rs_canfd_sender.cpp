@@ -156,7 +156,7 @@ void RoboSubCANFDSender::Run()
 		_send_raw_canfd_msg.id = (send_id.id | CAN_EFF_FLAG);
 		_send_raw_canfd_msg.data[0] = 0x0B;
 		// memcpy(_send_raw_canfd_msg.data + 1, arm_ctrl_msg.states, 6);
-		_send_raw_canfd_msg.len = 1;
+		_send_raw_canfd_msg.len = 7;
 		_send_raw_canfd_msg.timestamp = hrt_absolute_time();
 		// Publish the test message
 		send_raw_canfd_pub.publish(_send_raw_canfd_msg);
