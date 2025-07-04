@@ -73,6 +73,7 @@
 
 	 /** @see ModuleBase::print_status() */
 	 int print_status() override;
+	void teleoperated_arm();
 
  private:
 
@@ -85,7 +86,7 @@
 	 #define HOLD 0
 	 #define EXTEND 1
 	 #define CONTRACT 2
-	 #define TELEARM 3
+	 #define TELEARM 0b011
 
 	 perf_counter_t _loop_perf;
 
@@ -105,7 +106,7 @@
 
 	 uint8_t istates[6] = {0, 0, 0, 0, 0, 0};
 
-	 void teleoperated_arm();
+	//  void teleoperated_arm();
 	 uint16_t servo_angle(int8_t direction, uint16_t angle);
 
 	 void parameters_update(bool force = false);

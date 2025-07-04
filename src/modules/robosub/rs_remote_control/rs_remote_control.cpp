@@ -45,6 +45,8 @@
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 
+#include "../rs_arm_control/rs_arm_control.hpp"
+
 // PX4 defines for InternalSensors.msg
 #define SENSOR_HUMIDITY 0
 #define SENSOR_TEMPERATURE 1
@@ -120,9 +122,11 @@ RobosubRemoteControl::~RobosubRemoteControl() {
 
 void RobosubRemoteControl::Run() {
         perf_begin(_loop_perf);
+        RobosubArmControl robosub_arm_control;
 
         if (!_status_sub.update(&_status_msg) && status_safe) {
                 taskStat();
+                robosub_arm_control.teleoperated_arm();
 
                 receiver();
         } else { // I don't agree with handling the emergency in here. I think it should be handled in the position controller.
@@ -159,7 +163,8 @@ void RobosubRemoteControl::Run() {
 
 void RobosubRemoteControl::taskStat() {
         update1 = 0;
-        if (_input_rc_sub.update(&_input_rc)) {
+        // if (_input_rc_sub.update(&_input_rc)) {
+        if(1){
                 update1 = 1;
                 input_rc_s rc_data{};
                 _input_rc_sub.copy(&rc_data);
@@ -173,40 +178,41 @@ void RobosubRemoteControl::taskStat() {
                 normalized[6] = math::constrain(normalized[6], -1.0f, 1.0f);
                 normalized[7] = math::constrain(normalized[7], -1.0f, 1.0f);
 
-                uint8_t stateEnable((normalized[4] > 0.0f) ? 1 : 0);
+                // uint8_t stateEnable((normalized[4] > 0.0f) ? 1 : 0);
 
-                if (stateEnable == 1) {
-                        bitReg = ((normalized[5] > 0.0f) ? 1 : 0) | ((normalized[6] > 0.0f) ? 1 : 0) << 1 |
-                                 ((normalized[7] > 0.0f) ? 1 : 0) << 2;
-                        switch (bitReg) {
-                        case 0b000:
-                                _drone_task.task = TASK_REMOTECONTROLLED;
-                                break;
-                        case 0b001:
-                                _drone_task.task = TASK_BUOYANCYCTRL;
-                                break;
-                        case 0b010:
-                                _drone_task.task = TASK_DPGOAL;
-                                break;
-			case 0b011:
-				_drone_task.task = TASK_DPTELEARM;
-				break;
-			case 0b100:
-				_drone_task.task = TASK_SEARCHBUOY;
-				break;
-			case 0b101:
-				_drone_task.task = TASK_SEARCHTUBE;
-				break;
-			case 0b110:
-				_drone_task.task = TASK_TASK2;
-				break;
-                        case 0b111:
-                                _drone_task.task = TASK_TASK1;
-                                break;
-                        default:
-				_drone_task.task = TASK_REMOTECONTROLLED;
-                                break;
-                        }
+                // if (stateEnable == 1) {
+                //         bitReg = ((normalized[5] > 0.0f) ? 1 : 0) | ((normalized[6] > 0.0f) ? 1 : 0) << 1 |
+                //                  ((normalized[7] > 0.0f) ? 1 : 0) << 2;
+                //         switch (bitReg) {
+                //         case 0b000:
+                //                 _drone_task.task = TASK_REMOTECONTROLLED;
+                //                 break;
+                //         case 0b001:
+                //                 _drone_task.task = TASK_BUOYANCYCTRL;
+                //                 break;
+                //         case 0b010:
+                //                 _drone_task.task = TASK_DPGOAL;
+                //                 break;
+		// 	case 0b011:
+		// 		_drone_task.task = TASK_DPTELEARM;
+		// 		break;
+		// 	case 0b100:
+		// 		_drone_task.task = TASK_SEARCHBUOY;
+		// 		break;
+		// 	case 0b101:
+		// 		_drone_task.task = TASK_SEARCHTUBE;
+		// 		break;
+		// 	case 0b110:
+		// 		_drone_task.task = TASK_TASK2;
+		// 		break;
+                //         case 0b111:
+                //                 _drone_task.task = TASK_TASK1;
+                //                 break;
+                //         default:
+		// 		_drone_task.task = TASK_REMOTECONTROLLED;
+                //                 break;
+                //         }
+                        _drone_task.task = TASK_DPTELEARM;
 
                         _drone_task.timestamp = hrt_absolute_time();
 			if(!armed) {
@@ -224,7 +230,7 @@ void RobosubRemoteControl::taskStat() {
 
                 }
         }
-}
+// }
 
 void RobosubRemoteControl::receiver() {
         RobosubMotorControl robosub_motor_control;
