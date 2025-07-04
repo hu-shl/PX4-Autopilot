@@ -73,7 +73,7 @@
 
 	 /** @see ModuleBase::print_status() */
 	 int print_status() override;
-	void teleoperated_arm();
+	void __attribute__((optimize(0))) teleoperated_arm();
 
  private:
 

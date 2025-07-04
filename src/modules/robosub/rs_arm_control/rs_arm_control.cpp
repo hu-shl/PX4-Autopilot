@@ -5,12 +5,15 @@
 #include <px4_platform_common/posix.h>
 #include <px4_platform_common/defines.h>
 #include <px4_platform_common/time.h>
-#include <math.h>
+#include <lib/mathlib/mathlib.h>
+#include <lib/perf/perf_counter.h>
+#include <drivers/drv_hrt.h>
+#include <cstring>
 
 #include <uORB/topics/parameter_update.h>
 #include <uORB/topics/sensor_combined.h>
 
-extern "C" __EXPORT int rs_arm_control_main(int argc, char *argv[]);
+#define MODULE_NAME "rs_arm_control"
 
 int RobosubArmControl::print_status() {
 	PX4_INFO("Running");
@@ -58,10 +61,20 @@ RobosubArmControl::~RobosubArmControl() {
 void RobosubArmControl::Run() {
 	perf_begin(_loop_perf);
 
+	_arm_ctrl.states[0] = 0; // SEG1
+	_arm_ctrl.states[1] = 1; // SEG2
+	_arm_ctrl.states[2] = 2; // SEG3
+	_arm_ctrl.states[3] = 0; // BASE
+	_arm_ctrl.states[4] = 1; // GRIPROT
+	_arm_ctrl.states[5] = 2; // GRIP
+
+	_arm_ctrl.timestamp = hrt_absolute_time();
+	_arm_ctrl_pub.publish(_arm_ctrl);
+
 	if(_drone_task_sub.update(&_drone_task))
 	{
-		_drone_task_sub.copy(&_drone_task);
-		teleoperated_arm();
+		// _drone_task_sub.copy(&_drone_task);
+		// teleoperated_arm();
 	}
 
 
@@ -70,71 +83,68 @@ void RobosubArmControl::Run() {
 
 void RobosubArmControl::teleoperated_arm() {
 	// if(_drone_task.task == TELEARM)
-	if(1)
+	if(true)
 	{
-		// if (_input_rc_sub.update(&_input_rc)) {
-		if(1) {
-			// _input_rc_sub.copy(&_input_rc);
+		// // if (_input_rc_sub.update(&_input_rc)) {
+		// if(1) {
+		// 	// _input_rc_sub.copy(&_input_rc);
 
-			normalized[0] = (_input_rc.values[1] - 1500) / 400.0f;
-			normalized[1] = (_input_rc.values[2] - 1500) / 400.0f;
-			normalized[2] = (_input_rc.values[3] - 1500) / 400.0f;
-			normalized[3] = (_input_rc.values[0] - 1500) / 400.0f;
+		// 	normalized[0] = (_input_rc.values[1] - 1500) / 400.0f;
+		// 	normalized[1] = (_input_rc.values[2] - 1500) / 400.0f;
+		// 	normalized[2] = (_input_rc.values[3] - 1500) / 400.0f;
+		// 	normalized[3] = (_input_rc.values[0] - 1500) / 400.0f;
 
-			normalized[0] = 0.0f;
-			normalized[1] = 0.0f;
-			normalized[2] = 0.0f;
-			normalized[3] = 0.0f;
+		// 	normalized[0] = 0.0f;
+		// 	normalized[1] = 0.0f;
+		// 	normalized[2] = 0.0f;
+		// 	normalized[3] = 0.0f;
 
-			for (int i = 0; i < 4; i++) {
-				normalized[i] = math::constrain(normalized[i], -1.0f, 1.0f);
-			}
+		// 	for (int i = 0; i < 4; i++) {
+		// 		normalized[i] = math::constrain(normalized[i], -1.0f, 1.0f);
+		// 	}
 
-			if ((normalized[0]) < THRESHOLD)
-				istates[SEG1] = HOLD;
-			else if (normalized[0] < 0)
-				istates[SEG1] = EXTEND;
-			else
-				istates[SEG1] = CONTRACT;
+		// 	if ((normalized[0]) < THRESHOLD)
+		// 		istates[SEG1] = HOLD;
+		// 	else if (normalized[0] < 0)
+		// 		istates[SEG1] = EXTEND;
+		// 	else
+		// 		istates[SEG1] = CONTRACT;
 
-			if ((normalized[1]) < THRESHOLD)
-				istates[SEG2] = HOLD;
-			else if (normalized[1] < 0)
-				istates[SEG2] = EXTEND;
-			else
-				istates[SEG2] = CONTRACT;
+		// 	if ((normalized[1]) < THRESHOLD)
+		// 		istates[SEG2] = HOLD;
+		// 	else if (normalized[1] < 0)
+		// 		istates[SEG2] = EXTEND;
+		// 	else
+		// 		istates[SEG2] = CONTRACT;
 
-			if (normalized[2] < -THRESHOLD) {
-				if (normalized[2] >= -0.45f)
-					istates[BASE] = CONTRACT;
-				else
-					istates[BASE] = EXTEND;
-			} else if (normalized[2] > THRESHOLD) {
-				istates[GRIP] = EXTEND;
-			} else {
-				istates[BASE] = HOLD;
-				istates[GRIP] = HOLD;
-			}
+		// 	if (normalized[2] < -THRESHOLD) {
+		// 		if (normalized[2] >= -0.45f)
+		// 			istates[BASE] = CONTRACT;
+		// 		else
+		// 			istates[BASE] = EXTEND;
+		// 	} else if (normalized[2] > THRESHOLD) {
+		// 		istates[GRIP] = EXTEND;
+		// 	} else {
+		// 		istates[BASE] = HOLD;
+		// 		istates[GRIP] = HOLD;
+		// 	}
 
-			if ((normalized[3]) < THRESHOLD)
-				istates[SEG3] = HOLD;
-			else if (normalized[3] < 0)
-				istates[SEG3] = EXTEND;
-			else
-				istates[SEG3] = CONTRACT;
+		// 	if ((normalized[3]) < THRESHOLD)
+		// 		istates[SEG3] = HOLD;
+		// 	else if (normalized[3] < 0)
+		// 		istates[SEG3] = EXTEND;
+		// 	else
+		// 		istates[SEG3] = CONTRACT;
 
-			_arm_ctrl.timestamp = hrt_absolute_time();
-			istates[0] = 0;
-			istates[1] = 1;
-			istates[2] = 2;
-			istates[3] = 0;
-			istates[4] = 1;
-			istates[5] = 2;
+		// 	istates[0] = 0;
+		// 	istates[1] = 1;
+		// 	istates[2] = 2;
+		// 	istates[3] = 0;
+		// 	istates[4] = 1;
+		// 	istates[5] = 2;
 
-			memcpy(_arm_ctrl.states, istates, 6);
+		// 	memcpy(_arm_ctrl.states, istates, 6);
 
-			_arm_ctrl_pub.publish(_arm_ctrl);
-		}
 	}
 }
 

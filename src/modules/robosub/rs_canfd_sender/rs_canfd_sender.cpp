@@ -77,7 +77,15 @@ int RoboSubCANFDSender::task_spawn(int argc, char *argv[])
 bool RoboSubCANFDSender::init()
 {
 	if (!control_lamp_sub.registerCallback()) {
-		PX4_ERR("callback registration failed");
+		PX4_ERR("control lamp callback registration failed");
+		return false;
+	}
+	if (!buoyancy_ctrl_sub.registerCallback()) {
+		PX4_ERR("bouyancy ctrl callback registration failed");
+		return false;
+	}
+	if (!arm_ctrl_sub.registerCallback()) {
+		PX4_ERR("arm ctrl callback registration failed");
 		return false;
 	}
 	PX4_DEBUG("RoboSubCANFDSender::init()");
@@ -147,8 +155,8 @@ void RoboSubCANFDSender::Run()
 
 		_send_raw_canfd_msg.id = (send_id.id | CAN_EFF_FLAG);
 		_send_raw_canfd_msg.data[0] = 0x0B;
-		memcpy(_send_raw_canfd_msg.data + 1, arm_ctrl_msg.states, 6);
-		_send_raw_canfd_msg.len = 7;
+		// memcpy(_send_raw_canfd_msg.data + 1, arm_ctrl_msg.states, 6);
+		_send_raw_canfd_msg.len = 1;
 		_send_raw_canfd_msg.timestamp = hrt_absolute_time();
 		// Publish the test message
 		send_raw_canfd_pub.publish(_send_raw_canfd_msg);
